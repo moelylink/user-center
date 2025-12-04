@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户登录</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/style.css"> 
+    
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+</head>
+<body>
+
+    <nav class="transparent-nav">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo"><i class="material-icons">cloud</i>MySite</a>
+            <ul id="nav-mobile" class="right hide-on-med-and-down">
+                <li><a href="#">首页</a></li>
+                <li><a href="#">帮助</a></li>
+                <li><a href="#">关于</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="fixed-action-btn theme-fab">
+        <a class="btn-floating btn-large grey darken-3 waves-effect waves-light" onclick="window.toggleTheme()">
+            <i class="material-icons theme-icon-text">dark_mode</i>
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col s12 m8 offset-m2 l6 offset-l3">
+                <div class="card auth-card z-depth-3">
+                    <div class="card-content">
+                        <span class="card-title center-align">欢迎回来</span>
+                        
+                        <div class="row">
+                            <div class="col s12">
+                                <ul class="tabs">
+                                    <li class="tab col s6"><a class="active" href="#login-tab">登录</a></li>
+                                    <li class="tab col s6"><a href="#register-tab">注册</a></li>
+                                </ul>
+                            </div>
+                            
+                            <div id="login-tab" class="col s12">
+                                <br>
+                                <div class="input-field">
+                                    <i class="material-icons prefix">email</i>
+                                    <input id="login-email" type="email" class="validate">
+                                    <label for="login-email">邮箱</label>
+                                </div>
+                                <div class="input-field">
+                                    <i class="material-icons prefix">lock</i>
+                                    <input id="login-password" type="password" class="validate">
+                                    <label for="login-password">密码</label>
+                                </div>
+                                
+                                <button id="btn-login" class="btn waves-effect waves-light blue col s12 z-depth-1">登录</button>
+                                
+                                <div class="center-align col s12" style="margin-top:15px">
+                                    <a href="#" id="btn-otp" class="grey-text text-darken-1">OTP 登录</a> | 
+                                    <a href="#" id="btn-reset" class="grey-text text-darken-1">找回密码</a> |
+                                    <a href="#" id="btn-passkey" class="grey-text text-darken-1">Passkey</a>
+                                </div>
+
+                                <div class="col s12 center-align social-login-container">
+                                    <p class="grey-text">第三方快速登录</p>
+                                    <button data-provider="google" class="btn-floating waves-effect waves-light white social-login social-btn" title="Google 登录">
+                                        <i class="fa-brands fa-google" style="color: #DB4437;"></i>
+                                    </button>
+                                    <button data-provider="github" class="btn-floating waves-effect waves-light black social-login social-btn" title="GitHub 登录">
+                                        <i class="fa-brands fa-github white-text"></i>
+                                    </button>
+                                    <button data-provider="azure" class="btn-floating waves-effect waves-light white social-login social-btn" title="Microsoft 登录">
+                                        <i class="fa-brands fa-microsoft" style="color: #00a4ef;"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="register-tab" class="col s12">
+                                <br>
+                                <div class="input-field">
+                                    <i class="material-icons prefix">email</i>
+                                    <input id="reg-email" type="email" class="validate">
+                                    <label for="reg-email">邮箱</label>
+                                </div>
+                                <div class="input-field">
+                                    <i class="material-icons prefix">lock</i>
+                                    <input id="reg-password" type="password" class="validate">
+                                    <label for="reg-password">设置密码</label>
+                                </div>
+                                <div class="input-field">
+                                    <i class="material-icons prefix">lock_outline</i>
+                                    <input id="reg-password-confirm" type="password" class="validate">
+                                    <label for="reg-password-confirm">确认密码</label>
+                                </div>
+                                <button id="btn-register" class="btn waves-effect waves-light green col s12 z-depth-1">注册账号</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户中心</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="./css/dashboard.css">
+</head>
+<body>
+
+    <header>
+        <nav class="top-nav z-depth-1">
+            <div class="nav-wrapper">
+                <a href="#" data-target="slide-out" class="sidenav-trigger black-text"><i class="material-icons">menu</i></a>
+                <a class="brand-logo center black-text truncate page-title" id="page-title">账号设置</a>
+                <ul class="right">
+                    <li><a href="#">首页</a></li>
+                    <li>
+                        <a href="javascript:void(0)" onclick="window.toggleTheme()" class="black-text" title="切换主题">
+                            <i class="material-icons theme-icon-text">dark_mode</i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <ul id="slide-out" class="sidenav sidenav-fixed">
+        <li>
+            <div class="user-view">
+                <div class="background"></div>
+                <a href="#user"><img class="circle white" src="" id="user-avatar"></a>
+                <a href="#name"><span class="white-text name" id="nav-email">Loading...</span></a>
+                <a href="#email"><span class="white-text email" id="nav-created">Joined: ...</span></a>
+            </div>
+        </li>
+        <li><a href="?view=settings" class="waves-effect" id="link-settings"><i class="material-icons">settings</i>账号设置</a></li>
+        <li><a href="?view=favorites&page=1" class="waves-effect" id="link-favorites"><i class="material-icons">collections</i>收藏列表</a></li>
+        <li><div class="divider"></div></li>
+        <li><a href="#!" id="btn-logout" class="waves-effect"><i class="material-icons">exit_to_app</i>退出登录</a></li>
+    </ul>
+
+    <main>
+        <div class="container">
+            <div id="view-settings" class="view-section">
+                <div class="row">
+                    <div class="col s12">
+                        <div class="card hoverable">
+                            <div class="card-content">
+                                <span class="card-title">基本资料</span>
+                                <div class="row">
+                                    <form id="form-update-email" class="col s12 m6">
+                                        <div class="input-field">
+                                            <input id="new-email" type="email" class="validate">
+                                            <label for="new-email">修改邮箱</label>
+                                        </div>
+                                        <button class="btn blue waves-effect waves-light">更新邮箱</button>
+                                    </form>
+                                    <div class="col s12 m6 center-align">
+                                        <p class="grey-text">绑定第三方账号</p>
+                                        <button class="btn black waves-effect link-social" data-provider="github" style="margin:5px;">GitHub</button>
+                                        <button class="btn red waves-effect link-social" data-provider="google" style="margin:5px;">Google</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col s12">
+                        <div class="card hoverable">
+                            <div class="card-content">
+                                <div class="row valign-wrapper" style="margin-bottom:0;">
+                                    <div class="col s8"><span class="card-title">我的私信</span></div>
+                                    <div class="col s4 right-align">
+                                        <a href="#modal-message" class="btn-floating waves-effect waves-light pink modal-trigger"><i class="material-icons">add</i></a>
+                                    </div>
+                                </div>
+                                <div class="divider"></div>
+                                <ul class="collection" id="message-list" style="border:none;">
+                                    <li class="collection-item center-align grey-text">正在加载...</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-gallery" class="view-section">
+                <div class="row" style="margin-top:20px;">
+                    <div class="col s12 right-align">
+                        <a class='dropdown-trigger btn white black-text z-depth-1' href='#' data-target='dropdown-sort'>
+                            <i class="material-icons left">sort</i>排序
+                        </a>
+                        <ul id='dropdown-sort' class='dropdown-content'>
+                            <li><a id="sort-new" href="#!">从新到旧</a></li>
+                            <li><a id="sort-old" href="#!">从旧到新</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div id="gallery-container" class="masonry-wrapper"></div>
+                <div class="row">
+                    <div class="col s12 center-align">
+                        <ul class="pagination">
+                            <li id="page-prev" class="waves-effect"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
+                            <li class="active blue"><a href="#!" id="page-current">1</a></li>
+                            <li id="page-next" class="waves-effect"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-message" class="modal bottom-sheet">
+        <div class="modal-content container">
+            <h4>发送私信</h4>
+            <form id="form-send-message">
+                <div class="input-field">
+                    <i class="material-icons prefix">person_search</i>
+                    <input id="msg-recipient-email" type="email" class="validate" required>
+                    <label for="msg-recipient-email">收件人邮箱</label>
+                </div>
+                <div class="input-field">
+                    <i class="material-icons prefix">message</i>
+                    <textarea id="msg-content" class="materialize-textarea" required></textarea>
+                    <label for="msg-content">内容</label>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer container">
+            <a href="#!" class="modal-close waves-effect waves-green btn-flat">取消</a>
+            <button form="form-send-message" class="btn blue waves-effect waves-light">发送</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script src="./js/config.js"></script>
+    <script src="./js/dashboard-core.js"></script>
+    <script src="./js/settings.js"></script>
+    <script src="./js/gallery.js"></script>
+</body>
+</html>

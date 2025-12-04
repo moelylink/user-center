@@ -1,0 +1,108 @@
+/* ./css/style.css */
+
+/* --- 全局背景 --- */
+body {
+    background: url('https://bing.ee123.net/img/') no-repeat center center fixed;
+    background-size: cover;
+    transition: background 0.3s ease;
+    min-height: 100vh;
+}
+
+/* 导航栏样式 */
+nav {
+    background-color: rgba(255, 255, 255, 0.8); /*稍微增加透明度*/
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+}
+nav .brand-logo, nav ul a { color: #333; }
+
+/* --- 登录框核心样式修改 (需求 1: 半透明 + 模糊) --- */
+.auth-card {
+    margin-top: 10vh;
+    padding: 20px;
+    border-radius: 16px;
+    /* 白天模式：白色背景透明度调低至 0.7 */
+    background-color: rgba(255, 255, 255, 0.7); 
+    /* 背景模糊 */
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px); /* 兼容 Safari */
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); /* 增加一点柔和阴影 */
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* 第三方登录按钮容器 */
+.social-login-container {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.social-btn {
+    margin: 0 10px;
+    width: 45px;
+    height: 45px;
+    line-height: 45px;
+    padding: 0;
+    font-size: 20px;
+}
+
+/* 悬浮主题切换按钮 */
+.theme-fab {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+}
+
+/* --- 深色模式全局覆盖 --- */
+body.dark-mode {
+    /* (需求 1: 背景遮罩透明度增加，不再那么暗) 
+       使用 linear-gradient 叠加 40% 的黑色，代替之前的 multiply 混合模式
+    */
+    background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('https://bing.ee123.net/img/');
+    background-blend-mode: normal;
+}
+
+/* 导航栏深色适配 */
+body.dark-mode nav {
+    background-color: rgba(30, 30, 30, 0.7);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+body.dark-mode nav .brand-logo, body.dark-mode nav ul a { color: #fff; }
+
+/* 卡片深色适配 */
+body.dark-mode .auth-card {
+    /* 夜间模式：深色背景透明度调至 0.6，更通透 */
+    background-color: rgba(30, 30, 30, 0.6); 
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Tabs 样式修复 */
+body.dark-mode .tabs {
+    background-color: transparent !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+body.dark-mode .tabs .tab a { color: #aaa; }
+body.dark-mode .tabs .tab a:hover { color: #bbdefb; }
+body.dark-mode .tabs .tab a.active { color: #64b5f6; }
+body.dark-mode .tabs .indicator { background-color: #64b5f6; }
+
+/* 输入框样式修复 */
+body.dark-mode .input-field input {
+    color: #fff;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+body.dark-mode .input-field input:focus {
+    border-bottom: 1px solid #64b5f6 !important;
+    box-shadow: 0 1px 0 0 #64b5f6 !important;
+}
+body.dark-mode .input-field label,
+body.dark-mode .input-field .prefix { color: #aaa; }
+body.dark-mode .input-field .prefix.active { color: #64b5f6; }
+
+body.dark-mode .social-login-container {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode a { color: #64b5f6; }
