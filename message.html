@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>私信消息 - Moely</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/user.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <nav class="navbar fixed-top">
+        <div class="nav-left">
+            <button id="menu-btn" class="icon-btn nav-icon-btn mobile-only">
+                <span class="material-icons-round">menu</span>
+            </button>
+            <a href="/" class="brand-logo">Moely</a>
+        </div>
+        <div class="nav-right">
+            <button id="theme-toggle" class="icon-btn nav-icon-btn">
+                <span class="material-icons-round">dark_mode</span>
+            </button>
+            <button id="btn-logout" class="icon-btn nav-icon-btn">
+                <span class="material-icons-round">logout</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header mobile-only">
+            <span class="brand-logo">菜单</span>
+            <button id="close-sidebar" class="icon-btn">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="/" class="sidebar-item">
+                <span class="material-icons-round">settings</span>账号设置
+            </a>
+            <a href="/message" class="sidebar-item active">
+                <span class="material-icons-round">mail</span>私信消息
+            </a>
+            <a href="/star" class="sidebar-item">
+                <span class="material-icons-round">image</span>美图收藏
+            </a>
+            <a href="/anime" class="sidebar-item">
+                <span class="material-icons-round">movie</span>番剧收藏
+            </a>
+        </div>
+    </aside>
+
+    <main class="main-content chat-wrapper">
+        <div class="chat-container">
+            <div class="contact-pane" id="contact-pane">
+                <div class="pane-header">
+                    <h3>消息</h3>
+                    <button class="icon-btn" id="btn-new-chat" title="发起新私信">
+                        <span class="material-icons-round">add_comment</span>
+                    </button>
+                </div>
+                <div class="search-bar-container hidden" id="new-chat-search">
+                    <input type="email" id="search-email-input" placeholder="输入对方邮箱..." autocomplete="off">
+                    <button id="btn-search-confirm" class="btn-sm btn-primary">确定</button>
+                </div>
+
+                <div class="contact-list" id="contact-list">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <div class="chat-pane" id="chat-pane">
+                <div class="chat-empty" id="chat-empty">
+                    <span class="material-icons-round">chat_bubble_outline</span>
+                    <p>选择一个联系人开始聊天</p>
+                </div>
+
+                <div class="chat-content hidden" id="chat-content">
+                    <div class="chat-header">
+                        <button class="icon-btn mobile-only" id="back-to-contacts">
+                            <span class="material-icons-round">arrow_back</span>
+                        </button>
+                        <div class="header-info">
+                            <span class="material-icons-round avatar-placeholder">person</span>
+                            <span id="current-chat-name">用户名称</span>
+                        </div>
+                    </div>
+
+                    <div class="messages-area" id="messages-area">
+                        </div>
+
+                    <div class="input-area">
+                        <textarea id="message-input" placeholder="输入消息..." rows="1"></textarea>
+                        <button id="btn-send-message" class="icon-btn send-btn" disabled>
+                            <span class="material-icons-round">send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="./js/common.js"></script>
+    <script src="./js/message.js"></script>
+</body>
+</html>

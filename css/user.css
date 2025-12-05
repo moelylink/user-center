@@ -416,32 +416,191 @@ body {
     background: #ff4d4f; color: white; border: none;
     padding: 8px 24px; border-radius: 8px; cursor: pointer;
 }
-.confirm-dialog {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,.5);
+
+/* =========================================
+   私信页面 (Chat) 样式
+   ========================================= */
+
+/* 聊天整体容器：铺满剩余空间 */
+.chat-wrapper {
+    height: 100vh;
+    overflow: hidden;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2147483647; /* 已经很高了 */
-    opacity: 0;
-    visibility: hidden;
-    transition: all .3s ease
+    flex-direction: column;
 }
-.confirm-content {
-    background: #fff;
-    padding: 24px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 2px 10px rgba(0,0,0,.1);
-    /* 原有代码中多余的定位属性，Flexbox 布局下不需要 */
-    /* position: absolute; */ 
-    /* top: 50%; */
-    /* left: 50%; */
-    /* transform: translate(-50%,-50%); */
-    margin: 0 /* 确保没有外边距干扰居中 */
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    background: var(--card-bg);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    height: 100%;
+}
+
+/* 左侧联系人 */
+.contact-pane {
+    width: 300px;
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.5);
+}
+[data-theme="dark"] .contact-pane { background: rgba(0,0,0,0.2); }
+
+.pane-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.pane-header h3 { font-size: 18px; font-weight: 500; margin: 0; }
+
+.search-bar-container {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; gap: 8px;
+    animation: fadeIn 0.3s ease;
+}
+.search-bar-container input {
+    flex: 1; padding: 6px 10px; border-radius: 6px;
+    border: 1px solid var(--border-color); outline: none;
+    background: var(--input-bg); color: var(--text-color);
+}
+
+.contact-list {
+    flex: 1; overflow-y: auto;
+}
+
+.contact-item {
+    padding: 12px 16px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid transparent;
+}
+.contact-item:hover { background: rgba(0,0,0,0.05); }
+.contact-item.active { background: rgba(26, 115, 232, 0.1); border-left: 3px solid var(--primary-color); }
+
+.avatar-placeholder {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: #e0e0e0; color: #757575;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+}
+
+.contact-info { flex: 1; overflow: hidden; }
+.contact-name { font-weight: 500; font-size: 14px; margin-bottom: 4px; }
+.contact-preview { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 右侧聊天窗口 */
+.chat-pane {
+    flex: 1;
+    display: flex; flex-direction: column;
+    position: relative;
+    background: var(--card-bg);
+}
+
+.chat-empty {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--text-secondary);
+}
+.chat-empty .material-icons-round { font-size: 64px; margin-bottom: 16px; opacity: 0.3; }
+
+.chat-content {
+    display: flex; flex-direction: column; height: 100%;
+}
+
+.chat-header {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.8);
+    backdrop-filter: blur(10px);
+}
+[data-theme="dark"] .chat-header { background: rgba(30,30,30,0.8); }
+
+.header-info { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+
+.messages-area {
+    flex: 1; overflow-y: auto;
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+}
+
+.message-bubble {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.message-bubble.sent {
+    align-self: flex-end;
+    background: var(--primary-color);
+    color: white;
+    border-bottom-right-radius: 2px;
+}
+
+.message-bubble.received {
+    align-self: flex-start;
+    background: #f1f3f4;
+    color: #202124;
+    border-bottom-left-radius: 2px;
+}
+[data-theme="dark"] .message-bubble.received { background: #3c4043; color: #e8eaed; }
+
+.message-time {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-top: 4px;
+    text-align: right;
+}
+
+.input-area {
+    padding: 12px;
+    border-top: 1px solid var(--border-color);
+    display: flex; gap: 10px; align-items: flex-end;
+    background: var(--card-bg);
+}
+
+.input-area textarea {
+    flex: 1;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 10px 14px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    resize: none; outline: none;
+    font-family: inherit;
+    max-height: 100px;
+}
+
+.send-btn {
+    background: var(--primary-color);
+    color: white;
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+}
+.send-btn:disabled { background: var(--text-secondary); opacity: 0.5; cursor: not-allowed; }
+
+/* 响应式：移动端 */
+@media (max-width: 768px) {
+    .chat-container { border: none; border-radius: 0; }
+    .contact-pane { width: 100%; border-right: none; }
+    
+    /* 默认显示列表，隐藏聊天 */
+    .chat-pane { display: none; }
+    
+    /* 激活状态：隐藏列表，显示聊天 */
+    .chat-container.active-chat .contact-pane { display: none; }
+    .chat-container.active-chat .chat-pane { display: flex; }
+    
+    .chat-wrapper { padding: 0; margin-left: 0; width: 100%; }
 }
