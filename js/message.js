@@ -1,18 +1,26 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // 依赖 common.js
     if (typeof client === 'undefined') return;
 
     // 1. 验证登录
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/login';
+        window.location.href = '/user/login/';
         return;
     }
     const myId = session.user.id;
 
+    // 定义系统通知虚拟用户
+    const SYSTEM_BOT = {
+        id: 'system_notification_bot',
+        username: '站内通知',
+        email: 'system@moely.link',
+        avatar_url: null,
+        isSystem: true // 标记位
+    };
+
     // 状态管理
-    let activeChatUser = null; // 当前正在聊天的用户对象 {id, email, ...}
-    let contactsMap = new Map(); // 缓存联系人信息
+    let activeChatUser = null; 
+    let contactsMap = new Map(); 
 
     // DOM 元素
     const contactListEl = document.getElementById('contact-list');
@@ -22,65 +30,65 @@ document.addEventListener('DOMContentLoaded', async () => {
     const chatContainer = document.querySelector('.chat-container');
     const chatEmpty = document.getElementById('chat-empty');
     const chatContent = document.getElementById('chat-content');
+    const chatPane = document.getElementById('chat-pane'); // 用于切换只读模式
     const searchContainer = document.getElementById('new-chat-search');
 
     // ============================================================
-    // 2. 加载联系人列表 (基于历史消息聚合)
+    // 2. 加载联系人列表 (系统通知 + 私信聚合)
     // ============================================================
     async function loadContacts() {
         contactListEl.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
         
         try {
-            // 获取我参与的所有消息（发出的和收到的）
-            // 注意：如果数据量大，这里应该用 RPC 函数优化，目前用简单查询
-            const { data: messages, error } = await client
+            // A. 获取最新的系统通知预览
+            const { data: sysNotifs } = await client
                 .from('notifications')
+                .select('*')
+                .eq('user_id', myId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            
+            const lastSysMsg = sysNotifs && sysNotifs.length > 0 ? sysNotifs[0] : null;
+
+            // B. 获取私信列表 (private_messages)
+            const { data: messages, error } = await client
+                .from('private_messages')
                 .select('sender_id, receiver_id, created_at, content')
                 .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            // 提取所有交互过的 unique User IDs
+            // 提取私信联系人 ID
             const contactIds = new Set();
             messages.forEach(msg => {
                 if (msg.sender_id !== myId) contactIds.add(msg.sender_id);
                 if (msg.receiver_id !== myId) contactIds.add(msg.receiver_id);
             });
 
-            if (contactIds.size === 0) {
-                contactListEl.innerHTML = '<p style="text-align:center;color:#999;padding:20px">暂无消息<br>点击上方 + 号发起私信</p>';
-                return;
+            // 获取私信用户信息
+            let profiles = [];
+            if (contactIds.size > 0) {
+                const { data: pros, error: profileError } = await client
+                    .from('profiles')
+                    .select('id, email, username, avatar_url')
+                    .in('id', Array.from(contactIds));
+                if (profileError) throw profileError;
+                profiles = pros;
             }
 
-            // 获取这些用户的详细信息
-            const { data: profiles, error: profileError } = await client
-                .from('profiles')
-                .select('id, email, username, avatar_url')
-                .in('id', Array.from(contactIds));
-
-            if (profileError) throw profileError;
-
-            // 渲染列表
+            // 清空列表
             contactListEl.innerHTML = '';
+            contactsMap.clear();
+
+            // --- 1. 渲染【站内通知】置顶 ---
+            renderContactItem(SYSTEM_BOT, lastSysMsg ? lastSysMsg.title || lastSysMsg.content : '暂无系统通知');
+
+            // --- 2. 渲染【私信联系人】 ---
             profiles.forEach(profile => {
                 contactsMap.set(profile.id, profile);
-                
-                // 找到最后一条消息
                 const lastMsg = messages.find(m => m.sender_id === profile.id || m.receiver_id === profile.id);
-                
-                const div = document.createElement('div');
-                div.className = 'contact-item';
-                div.dataset.uid = profile.id;
-                div.onclick = () => selectChat(profile);
-                div.innerHTML = `
-                    <div class="avatar-placeholder">${(profile.username || profile.email)[0].toUpperCase()}</div>
-                    <div class="contact-info">
-                        <div class="contact-name">${profile.username || profile.email}</div>
-                        <div class="contact-preview">${lastMsg ? lastMsg.content : ''}</div>
-                    </div>
-                `;
-                contactListEl.appendChild(div);
+                renderContactItem(profile, lastMsg ? lastMsg.content : '');
             });
 
         } catch (err) {
@@ -89,8 +97,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // 渲染单个联系人条目的辅助函数
+    function renderContactItem(user, previewText) {
+        const div = document.createElement('div');
+        div.className = 'contact-item';
+        div.dataset.uid = user.id;
+        
+        // 如果是系统通知，加个特殊样式
+        if (user.isSystem) {
+            div.classList.add('system-item');
+        }
+
+        div.onclick = () => selectChat(user);
+        
+        const displayName = user.username || user.email;
+        // 如果是系统，显示喇叭图标；如果是用户，显示首字母
+        const initial = user.isSystem ? 
+            '<span class="material-icons-round" style="font-size:20px">campaign</span>' : 
+            (displayName ? displayName[0].toUpperCase() : '?');
+
+        div.innerHTML = `
+            <div class="avatar-placeholder">${initial}</div>
+            <div class="contact-info">
+                <div class="contact-name">${displayName}</div>
+                <div class="contact-preview">${escapeHtml(previewText)}</div>
+            </div>
+        `;
+        contactListEl.appendChild(div);
+    }
+
     // ============================================================
-    // 3. 搜索新用户并开始聊天
+    // 3. 搜索新用户 (私信)
     // ============================================================
     document.getElementById('btn-new-chat').addEventListener('click', () => {
         searchContainer.classList.toggle('hidden');
@@ -102,32 +139,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!email) return;
 
         try {
-            // 查 profile 表
-            const { data, error } = await client
-                .from('profiles')
-                .select('*')
-                .eq('email', email)
-                .single();
-
+            const { data, error } = await client.from('profiles').select('*').eq('email', email).single();
             if (error || !data) {
-                Notifications.show('未找到该用户，请检查邮箱', 'warning');
+                Notifications.show('未找到该用户', 'warning');
                 return;
             }
-
             if (data.id === myId) {
                 Notifications.show('不能给自己发消息', 'warning');
                 return;
             }
 
-            // 选中该用户
             searchContainer.classList.add('hidden');
             document.getElementById('search-email-input').value = '';
-            selectChat(data);
             
-            // 如果不在列表里，刷新一下列表（或者手动插进去）
+            // 如果不在列表里，加入缓存
             if (!contactsMap.has(data.id)) {
-                loadContacts(); 
+                contactsMap.set(data.id, data);
             }
+            selectChat(data);
 
         } catch (err) {
             Notifications.show('查找失败', 'error');
@@ -135,60 +164,114 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 4. 选择聊天对象 & 加载消息
+    // 4. 选择聊天对象 (区分系统 vs 私信)
     // ============================================================
     async function selectChat(userProfile) {
         activeChatUser = userProfile;
         
-        // UI 更新
+        // UI 高亮
         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
         const activeEl = document.querySelector(`.contact-item[data-uid="${userProfile.id}"]`);
         if (activeEl) activeEl.classList.add('active');
 
         chatEmpty.classList.add('hidden');
         chatContent.classList.remove('hidden');
-        
-        // 移动端切换视图
         chatContainer.classList.add('active-chat');
 
-        // 设置头部
         document.getElementById('current-chat-name').textContent = userProfile.username || userProfile.email;
         messagesArea.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
-        sendBtn.disabled = false;
 
-        // 加载历史消息
-        try {
-            const { data: messages, error } = await client
-                .from('notifications')
-                .select('*')
-                .or(`and(sender_id.eq.${myId},receiver_id.eq.${userProfile.id}),and(sender_id.eq.${userProfile.id},receiver_id.eq.${myId})`)
-                .order('created_at', { ascending: true });
+        // ----------------------------------------------------
+        // 分支 A: 如果是系统通知 (只读)
+        // ----------------------------------------------------
+        if (userProfile.isSystem) {
+            // 隐藏输入框
+            chatPane.classList.add('read-only');
+            
+            try {
+                // 查询 notifications 表
+                const { data: notifs, error } = await client
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', myId)
+                    .order('created_at', { ascending: true }); // 按时间正序排列
 
-            if (error) throw error;
+                if (error) throw error;
+                renderSystemMessages(notifs);
 
-            renderMessages(messages);
+                // 标记所有未读为已读 (可选)
+                await client.from('notifications').update({ is_read: true }).eq('user_id', myId).eq('is_read', false);
 
-        } catch (err) {
-            console.error(err);
-            messagesArea.innerHTML = '<p style="text-align:center">消息加载失败</p>';
+            } catch (err) {
+                console.error(err);
+                messagesArea.innerHTML = '<p style="text-align:center">加载通知失败</p>';
+            }
+        } 
+        // ----------------------------------------------------
+        // 分支 B: 如果是普通私信 (可回复)
+        // ----------------------------------------------------
+        else {
+            // 显示输入框
+            chatPane.classList.remove('read-only');
+            sendBtn.disabled = false;
+
+            try {
+                // 查询 private_messages 表
+                const { data: messages, error } = await client
+                    .from('private_messages')
+                    .select('*')
+                    .or(`and(sender_id.eq.${myId},receiver_id.eq.${userProfile.id}),and(sender_id.eq.${userProfile.id},receiver_id.eq.${myId})`)
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+                renderPrivateMessages(messages);
+
+            } catch (err) {
+                console.error(err);
+                messagesArea.innerHTML = '<p style="text-align:center">消息加载失败</p>';
+            }
         }
     }
 
-    function renderMessages(messages) {
+    // 渲染系统通知列表
+    function renderSystemMessages(notifications) {
+        messagesArea.innerHTML = '';
+        if (notifications.length === 0) {
+            messagesArea.innerHTML = '<p style="text-align:center;color:#ccc;margin-top:20px">暂无系统通知</p>';
+            return;
+        }
+
+        notifications.forEach(note => {
+            const div = document.createElement('div');
+            // 系统消息使用特殊样式，居中显示
+            div.className = 'message-bubble system-msg';
+            
+            // 组装内容：如果有标题，加粗显示
+            let html = '';
+            if (note.title) {
+                html += `<div class="system-msg-title">${escapeHtml(note.title)}</div>`;
+            }
+            html += escapeHtml(note.content);
+            html += `<div class="message-time">${new Date(note.created_at).toLocaleString()}</div>`;
+
+            div.innerHTML = html;
+            messagesArea.appendChild(div);
+        });
+        scrollToBottom();
+    }
+
+    // 渲染私信列表 (保持之前逻辑)
+    function renderPrivateMessages(messages) {
         messagesArea.innerHTML = '';
         if (messages.length === 0) {
             messagesArea.innerHTML = '<p style="text-align:center;color:#ccc;margin-top:20px">暂无消息，打个招呼吧！</p>';
             return;
         }
-
         messages.forEach(msg => appendMessageUI(msg));
         scrollToBottom();
     }
 
     function appendMessageUI(msg) {
-        // 如果是“暂无消息”提示，先清空
-        if (messagesArea.querySelector('p')) messagesArea.innerHTML = '';
-
         const isMine = msg.sender_id === myId;
         const div = document.createElement('div');
         div.className = `message-bubble ${isMine ? 'sent' : 'received'}`;
@@ -201,6 +284,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function escapeHtml(text) {
+        if (!text) return '';
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
@@ -211,13 +295,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================================
-    // 5. 发送消息
+    // 5. 发送私信 (只对普通用户有效)
     // ============================================================
     async function sendMessage() {
         const text = msgInput.value.trim();
-        if (!text || !activeChatUser) return;
+        // 双重检查：如果当前是系统通知模式，禁止发送
+        if (!text || !activeChatUser || activeChatUser.isSystem) return;
 
-        // 乐观更新 UI
         const tempMsg = {
             sender_id: myId,
             content: text,
@@ -228,7 +312,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             const { error } = await client
-                .from('notifications')
+                .from('private_messages')
                 .insert({
                     sender_id: myId,
                     receiver_id: activeChatUser.id,
@@ -237,11 +321,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
             if (error) throw error;
-            // 成功后不需要做什么，UI已经更新了
-            
         } catch (err) {
+            console.error(err);
             Notifications.show('发送失败', 'error');
-            // 实际项目中这里应该回滚UI或显示红色感叹号
         }
     }
 
@@ -254,43 +336,50 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 6. 实时消息监听 (Notifications)
+    // 6. 实时监听 (同时监听私信和系统通知)
     // ============================================================
-    client
-        .channel('public:notifications')
+    
+    // 监听私信
+    client.channel('public:private_messages')
         .on('postgres_changes', { 
             event: 'INSERT', 
             schema: 'public', 
-            table: 'notifications',
-            filter: `receiver_id=eq.${myId}` // 只监听发给我的
+            table: 'private_messages', 
+            filter: `receiver_id=eq.${myId}` 
         }, (payload) => {
             const newMsg = payload.new;
-            
-            // 情况 A: 当前正打开着发送者的聊天窗口 -> 直接上屏
-            if (activeChatUser && newMsg.sender_id === activeChatUser.id) {
+            // 如果正和此人聊天
+            if (activeChatUser && !activeChatUser.isSystem && newMsg.sender_id === activeChatUser.id) {
                 appendMessageUI(newMsg);
-                
-                // 标记为已读 (可选)
-                client.from('notifications').update({ is_read: true }).eq('id', newMsg.id);
-            } 
-            // 情况 B: 没在聊天，或聊的是别人 -> 弹出通知
-            else {
-                // 尝试获取发送者名字（如果在缓存里）
-                let senderName = '新消息';
-                const senderProfile = contactsMap.get(newMsg.sender_id);
-                if (senderProfile) {
-                    senderName = senderProfile.username || senderProfile.email;
-                    // 更新左侧列表的预览文本
-                    loadContacts(); 
-                }
-                
-                Notifications.show(`收到来自 ${senderName} 的消息`, 'info');
+                client.from('private_messages').update({ is_read: true }).eq('id', newMsg.id);
+            } else {
+                Notifications.show(`收到新私信`, 'info');
+                loadContacts(); // 刷新列表预览
             }
         })
         .subscribe();
 
+    // 监听系统通知
+    client.channel('public:notifications')
+        .on('postgres_changes', {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${myId}`
+        }, (payload) => {
+            const newNote = payload.new;
+            // 如果正打开系统通知页面
+            if (activeChatUser && activeChatUser.isSystem) {
+                // 手动刷新一下列表即可，或者手动插入DOM
+                selectChat(SYSTEM_BOT); 
+            } else {
+                Notifications.show(`收到系统通知: ${newNote.title || '新消息'}`, 'info');
+                loadContacts(); // 刷新列表预览
+            }
+        })
+        .subscribe();
 
-    // 移动端返回按钮
+    // 移动端返回
     document.getElementById('back-to-contacts').addEventListener('click', () => {
         chatContainer.classList.remove('active-chat');
         activeChatUser = null;

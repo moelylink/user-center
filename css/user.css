@@ -604,3 +604,41 @@ body {
     
     .chat-wrapper { padding: 0; margin-left: 0; width: 100%; }
 }
+
+/* 特殊联系人：系统通知 */
+.contact-item.system-item {
+    background-color: rgba(255, 152, 0, 0.05); /* 淡淡的橙色背景区分 */
+}
+.contact-item.system-item .avatar-placeholder {
+    background-color: #ff9800;
+    color: white;
+}
+.contact-item.system-item.active {
+    background-color: rgba(255, 152, 0, 0.15);
+    border-left-color: #ff9800;
+}
+
+/* 只读模式：隐藏输入框 */
+.chat-pane.read-only .input-area {
+    display: none !important;
+}
+
+/* 系统消息气泡样式微调 */
+.message-bubble.system-msg {
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffe0b2;
+    align-self: center; /* 居中显示 */
+    max-width: 85%;
+    border-radius: 8px;
+}
+[data-theme="dark"] .message-bubble.system-msg {
+    background: #4a3b2a;
+    color: #ffcc80;
+    border-color: #6d4c41;
+}
+.system-msg-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+    font-size: 15px;
+}
