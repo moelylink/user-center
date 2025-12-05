@@ -132,31 +132,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // =========================================
-    // 2.5 创建 Passkey (WebAuthn)
-    // =========================================
-    const btnPasskey = document.getElementById('btn-create-passkey');
-    btnPasskey.addEventListener('click', async () => {
-        try {
-            Notifications.show('正在启动安全密钥注册...', 'info');
-            
-            // 使用 Supabase MFA Enrollment API 注册 WebAuthn 因子
-            const { data, error } = await client.auth.mfa.enroll({
-                factorType: 'webauthn',
-            });
-
-            if (error) throw error;
-
-            Notifications.show('Passkey 创建成功！下次可使用指纹/面容登录', 'success');
-        } catch (err) {
-            console.error(err);
-            // 常见错误：浏览器不支持、用户取消、或没有启用 HTTPS
-            let msg = err.message;
-            if (err.message.includes('not supported')) msg = '当前浏览器不支持 Passkey';
-            Notifications.show('创建失败: ' + msg, 'error');
-        }
-    });
-
-    // =========================================
     // 退出登录
     // =========================================
     document.getElementById('btn-logout').addEventListener('click', async () => {
