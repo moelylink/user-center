@@ -1,146 +1,176 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户中心</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="./css/dashboard.css">
+    <title>账号设置 - Moely</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/user.css"> <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
+    <nav class="navbar fixed-top">
+        <div class="nav-left">
+            <button id="menu-btn" class="icon-btn nav-icon-btn mobile-only">
+                <span class="material-icons-round">menu</span>
+            </button>
+            <a href="/" class="brand-logo">Moely</a>
+        </div>
+        <div class="nav-right">
+            <button id="theme-toggle" class="icon-btn nav-icon-btn">
+                <span class="material-icons-round">dark_mode</span>
+            </button>
+            <button id="btn-logout" class="icon-btn nav-icon-btn" title="退出登录">
+                <span class="material-icons-round">logout</span>
+            </button>
+        </div>
+    </nav>
 
-    <header>
-        <nav class="top-nav z-depth-1">
-            <div class="nav-wrapper">
-                <a href="#" data-target="slide-out" class="sidenav-trigger black-text"><i class="material-icons">menu</i></a>
-                <a class="brand-logo center black-text truncate page-title" id="page-title">账号设置</a>
-                <ul class="right">
-                    <li><a href="#">首页</a></li>
-                    <li>
-                        <a href="javascript:void(0)" onclick="window.toggleTheme()" class="black-text" title="切换主题">
-                            <i class="material-icons theme-icon-text">dark_mode</i>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
-    </header>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header mobile-only">
+            <span class="brand-logo">菜单</span>
+            <button id="close-sidebar" class="icon-btn">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="/index" class="sidebar-item active">
+                <span class="material-icons-round">settings</span>账号设置
+            </a>
+            <a href="/message" class="sidebar-item">
+                <span class="material-icons-round">mail</span>私信消息
+            </a>
+            <a href="/star" class="sidebar-item">
+                <span class="material-icons-round">image</span>美图收藏
+            </a>
+            <a href="/anime" class="sidebar-item">
+                <span class="material-icons-round">movie</span>番剧收藏
+            </a>
+        </div>
+    </aside>
 
-    <ul id="slide-out" class="sidenav sidenav-fixed">
-        <li>
-            <div class="user-view">
-                <div class="background"></div>
-                <a href="#user"><img class="circle white" src="" id="user-avatar"></a>
-                <a href="#name"><span class="white-text name" id="nav-email">Loading...</span></a>
-                <a href="#email"><span class="white-text email" id="nav-created">Joined: ...</span></a>
-            </div>
-        </li>
-        <li><a href="?view=settings" class="waves-effect" id="link-settings"><i class="material-icons">settings</i>账号设置</a></li>
-        <li><a href="?view=favorites&page=1" class="waves-effect" id="link-favorites"><i class="material-icons">collections</i>收藏列表</a></li>
-        <li><div class="divider"></div></li>
-        <li><a href="#!" id="btn-logout" class="waves-effect"><i class="material-icons">exit_to_app</i>退出登录</a></li>
-    </ul>
-
-    <main>
+    <main class="main-content">
         <div class="container">
-            <div id="view-settings" class="view-section">
-                <div class="row">
-                    <div class="col s12">
-                        <div class="card hoverable">
-                            <div class="card-content">
-                                <span class="card-title">基本资料</span>
-                                <div class="row">
-                                    <form id="form-update-email" class="col s12 m6">
-                                        <div class="input-field">
-                                            <input id="new-email" type="email" class="validate">
-                                            <label for="new-email">修改邮箱</label>
-                                        </div>
-                                        <button class="btn blue waves-effect waves-light">更新邮箱</button>
-                                    </form>
-                                    <div class="col s12 m6 center-align">
-                                        <p class="grey-text">绑定第三方账号</p>
-                                        <button class="btn black waves-effect link-social" data-provider="github" style="margin:5px;">GitHub</button>
-                                        <button class="btn red waves-effect link-social" data-provider="google" style="margin:5px;">Google</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col s12">
-                        <div class="card hoverable">
-                            <div class="card-content">
-                                <div class="row valign-wrapper" style="margin-bottom:0;">
-                                    <div class="col s8"><span class="card-title">我的私信</span></div>
-                                    <div class="col s4 right-align">
-                                        <a href="#modal-message" class="btn-floating waves-effect waves-light pink modal-trigger"><i class="material-icons">add</i></a>
-                                    </div>
-                                </div>
-                                <div class="divider"></div>
-                                <ul class="collection" id="message-list" style="border:none;">
-                                    <li class="collection-item center-align grey-text">正在加载...</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <h1 class="page-title">账号设置</h1>
 
-            <div id="view-gallery" class="view-section">
-                <div class="row" style="margin-top:20px;">
-                    <div class="col s12 right-align">
-                        <a class='dropdown-trigger btn white black-text z-depth-1' href='#' data-target='dropdown-sort'>
-                            <i class="material-icons left">sort</i>排序
-                        </a>
-                        <ul id='dropdown-sort' class='dropdown-content'>
-                            <li><a id="sort-new" href="#!">从新到旧</a></li>
-                            <li><a id="sort-old" href="#!">从旧到新</a></li>
-                        </ul>
+            <div class="settings-grid">
+                <div class="card profile-card">
+                    <div class="card-header">
+                        <h3><span class="material-icons-round">badge</span> 个人信息</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <label>注册邮箱</label>
+                            <div class="info-value" id="user-email">加载中...</div>
+                        </div>
+                        <div class="info-row">
+                            <label>注册日期</label>
+                            <div class="info-value" id="user-reg-date">加载中...</div>
+                        </div>
+                        <div class="info-row">
+                            <label>用户 ID</label>
+                            <div class="info-value code-font" id="user-id">...</div>
+                        </div>
                     </div>
                 </div>
-                <div id="gallery-container" class="masonry-wrapper"></div>
-                <div class="row">
-                    <div class="col s12 center-align">
-                        <ul class="pagination">
-                            <li id="page-prev" class="waves-effect"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
-                            <li class="active blue"><a href="#!" id="page-current">1</a></li>
-                            <li id="page-next" class="waves-effect"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
-                        </ul>
+
+                <div class="card social-card">
+                    <div class="card-header">
+                        <h3><span class="material-icons-round">link</span> 账号绑定</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary">绑定后可直接使用第三方账号登录。</p>
+                        <div class="social-list">
+                            <div class="social-item" id="bind-google">
+                                <div class="social-info">
+                                    <i class="fa-brands fa-google" style="color: #DB4437;"></i>
+                                    <span>Google</span>
+                                </div>
+                                <button class="btn-sm btn-outline bind-btn" data-provider="google">绑定</button>
+                            </div>
+                            <div class="social-item" id="bind-github">
+                                <div class="social-info">
+                                    <i class="fa-brands fa-github"></i>
+                                    <span>GitHub</span>
+                                </div>
+                                <button class="btn-sm btn-outline bind-btn" data-provider="github">绑定</button>
+                            </div>
+                            <div class="social-item" id="bind-azure">
+                                <div class="social-info">
+                                    <i class="fa-brands fa-microsoft" style="color: #00A4EF;"></i>
+                                    <span>Microsoft</span>
+                                </div>
+                                <button class="btn-sm btn-outline bind-btn" data-provider="azure">绑定</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card security-card">
+                    <div class="card-header">
+                        <h3><span class="material-icons-round">security</span> 安全设置</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="form-change-pwd">
+                            <h4>修改密码</h4>
+                            <div class="input-group">
+                                <input type="password" id="old-pwd" required placeholder=" ">
+                                <label>原密码 (用于验证)</label>
+                            </div>
+                            <div class="input-group">
+                                <input type="password" id="new-pwd" required placeholder=" ">
+                                <label>新密码</label>
+                            </div>
+                            <div class="input-group">
+                                <input type="password" id="new-pwd-repeat" required placeholder=" ">
+                                <label>重复新密码</label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">更新密码</button>
+                            </div>
+                        </form>
+
+                        <div class="divider"></div>
+
+                        <div class="passkey-section">
+                            <div class="passkey-info">
+                                <h4>通行密钥 (Passkey)</h4>
+                                <p class="text-secondary">使用指纹、面容或安全密钥进行无密码登录。</p>
+                            </div>
+                            <button id="btn-create-passkey" class="btn-outline">
+                                <span class="material-icons-round">fingerprint</span> 创建通行密钥
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card email-card">
+                    <div class="card-header">
+                        <h3><span class="material-icons-round">email</span> 修改邮箱</h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary">修改后需要去新邮箱点击验证链接。</p>
+                        <form id="form-change-email">
+                            <div class="input-group">
+                                <input type="email" id="new-email" required placeholder=" ">
+                                <label>新邮箱地址</label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn-primary">发送验证邮件</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <div id="modal-message" class="modal bottom-sheet">
-        <div class="modal-content container">
-            <h4>发送私信</h4>
-            <form id="form-send-message">
-                <div class="input-field">
-                    <i class="material-icons prefix">person_search</i>
-                    <input id="msg-recipient-email" type="email" class="validate" required>
-                    <label for="msg-recipient-email">收件人邮箱</label>
-                </div>
-                <div class="input-field">
-                    <i class="material-icons prefix">message</i>
-                    <textarea id="msg-content" class="materialize-textarea" required></textarea>
-                    <label for="msg-content">内容</label>
-                </div>
-            </form>
-        </div>
-        <div class="modal-footer container">
-            <a href="#!" class="modal-close waves-effect waves-green btn-flat">取消</a>
-            <button form="form-send-message" class="btn blue waves-effect waves-light">发送</button>
-        </div>
-    </div>
-
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script src="./js/config.js"></script>
-    <script src="./js/dashboard-core.js"></script>
-    <script src="./js/settings.js"></script>
-    <script src="./js/gallery.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/user.js"></script>
 </body>
 </html>

@@ -1,114 +1,129 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户登录</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <title>用户登录 - Moely</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="./css/style.css"> 
-    
+    <link rel="stylesheet" href="./css/common.css">
+    <link rel="stylesheet" href="./css/login.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
 </head>
 <body>
+    <div class="bg-layer"></div>
 
-    <nav class="transparent-nav">
-        <div class="nav-wrapper container">
-            <a href="#" class="brand-logo"><i class="material-icons">cloud</i>MySite</a>
-            <ul id="nav-mobile" class="right hide-on-med-and-down">
-                <li><a href="#">首页</a></li>
-                <li><a href="#">帮助</a></li>
-                <li><a href="#">关于</a></li>
-            </ul>
+    <nav class="navbar">
+        <div class="nav-left">
+            <button id="menu-btn" class="icon-btn nav-icon-btn mobile-only">
+                <span class="material-icons-round">menu</span>
+            </button>
+            <a href="/" class="brand-logo">Moely</a>
+        </div>
+        
+        <div class="nav-links desktop-only">
+            <a href="/" class="nav-link">首页</a>
+            <a href="/about" class="nav-link">关于</a>
+            <a href="/blog" class="nav-link">博客</a>
+        </div>
+
+        <div class="nav-right">
+            <button id="theme-toggle" class="icon-btn nav-icon-btn" aria-label="切换主题">
+                <span class="material-icons-round">dark_mode</span>
+            </button>
         </div>
     </nav>
 
-    <div class="fixed-action-btn theme-fab">
-        <a class="btn-floating btn-large grey darken-3 waves-effect waves-light" onclick="window.toggleTheme()">
-            <i class="material-icons theme-icon-text">dark_mode</i>
-        </a>
-    </div>
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="brand-logo">Moely</span>
+            <button id="close-sidebar" class="icon-btn">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="/" class="sidebar-item"><span class="material-icons-round">home</span>首页</a>
+            <a href="/about" class="sidebar-item"><span class="material-icons-round">info</span>关于</a>
+            <a href="/blog" class="sidebar-item"><span class="material-icons-round">article</span>博客</a>
+        </div>
+    </aside>
 
-    <div class="container">
-        <div class="row">
-            <div class="col s12 m8 offset-m2 l6 offset-l3">
-                <div class="card auth-card z-depth-3">
-                    <div class="card-content">
-                        <span class="card-title center-align">欢迎回来</span>
-                        
-                        <div class="row">
-                            <div class="col s12">
-                                <ul class="tabs">
-                                    <li class="tab col s6"><a class="active" href="#login-tab">登录</a></li>
-                                    <li class="tab col s6"><a href="#register-tab">注册</a></li>
-                                </ul>
-                            </div>
-                            
-                            <div id="login-tab" class="col s12">
-                                <br>
-                                <div class="input-field">
-                                    <i class="material-icons prefix">email</i>
-                                    <input id="login-email" type="email" class="validate">
-                                    <label for="login-email">邮箱</label>
-                                </div>
-                                <div class="input-field">
-                                    <i class="material-icons prefix">lock</i>
-                                    <input id="login-password" type="password" class="validate">
-                                    <label for="login-password">密码</label>
-                                </div>
-                                
-                                <button id="btn-login" class="btn waves-effect waves-light blue col s12 z-depth-1">登录</button>
-                                
-                                <div class="center-align col s12" style="margin-top:15px">
-                                    <a href="#" id="btn-otp" class="grey-text text-darken-1">OTP 登录</a> | 
-                                    <a href="#" id="btn-reset" class="grey-text text-darken-1">找回密码</a> |
-                                    <a href="#" id="btn-passkey" class="grey-text text-darken-1">Passkey</a>
-                                </div>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2 id="auth-title">登录</h2>
+                <p id="auth-subtitle">使用您的 Moely 账号</p>
+            </div>
 
-                                <div class="col s12 center-align social-login-container">
-                                    <p class="grey-text">第三方快速登录</p>
-                                    <button data-provider="google" class="btn-floating waves-effect waves-light white social-login social-btn" title="Google 登录">
-                                        <i class="fa-brands fa-google" style="color: #DB4437;"></i>
-                                    </button>
-                                    <button data-provider="github" class="btn-floating waves-effect waves-light black social-login social-btn" title="GitHub 登录">
-                                        <i class="fa-brands fa-github white-text"></i>
-                                    </button>
-                                    <button data-provider="azure" class="btn-floating waves-effect waves-light white social-login social-btn" title="Microsoft 登录">
-                                        <i class="fa-brands fa-microsoft" style="color: #00a4ef;"></i>
-                                    </button>
-                                </div>
-                            </div>
+            <div id="step-email" class="auth-step active">
+                <div class="input-group">
+                    <input type="email" id="input-email" required placeholder=" ">
+                    <label for="input-email">电子邮箱</label>
+                </div>
+                <div class="actions-right">
+                    <button class="btn-text" id="btn-to-register">创建账号</button>
+                    <button class="btn-primary" id="btn-next">下一步</button>
+                </div>
+                
+                <div class="divider"><span>或通过第三方登录</span></div>
+                
+                <div class="social-login">
+                    <button class="social-btn" data-provider="google" title="Google 登录">
+                        <i class="fa-brands fa-google"></i>
+                    </button>
+                    <button class="social-btn" data-provider="github" title="GitHub 登录">
+                        <i class="fa-brands fa-github"></i>
+                    </button>
+                    <button class="social-btn" data-provider="azure" title="Microsoft 登录">
+                        <i class="fa-brands fa-microsoft"></i>
+                    </button>
+                </div>
+            </div>
 
-                            <div id="register-tab" class="col s12">
-                                <br>
-                                <div class="input-field">
-                                    <i class="material-icons prefix">email</i>
-                                    <input id="reg-email" type="email" class="validate">
-                                    <label for="reg-email">邮箱</label>
-                                </div>
-                                <div class="input-field">
-                                    <i class="material-icons prefix">lock</i>
-                                    <input id="reg-password" type="password" class="validate">
-                                    <label for="reg-password">设置密码</label>
-                                </div>
-                                <div class="input-field">
-                                    <i class="material-icons prefix">lock_outline</i>
-                                    <input id="reg-password-confirm" type="password" class="validate">
-                                    <label for="reg-password-confirm">确认密码</label>
-                                </div>
-                                <button id="btn-register" class="btn waves-effect waves-light green col s12 z-depth-1">注册账号</button>
-                            </div>
-                        </div>
-                    </div>
+            <div id="step-password" class="auth-step">
+                <div class="user-chip" id="user-chip">
+                    <span class="material-icons-round">account_circle</span>
+                    <span id="display-email"></span>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="input-password" required placeholder=" ">
+                    <label for="input-password">输入密码</label>
+                </div>
+                <div class="actions-left-right">
+                    <button class="btn-text" id="btn-forgot-pwd">忘记密码？</button>
+                </div>
+                <div class="actions-right mt-4">
+                    <button class="btn-text" id="btn-back-email">返回</button>
+                    <button class="btn-outlined" id="btn-otp-login">发送验证码登录</button>
+                    <button class="btn-primary" id="btn-login">登录</button>
+                </div>
+            </div>
+
+            <div id="step-register" class="auth-step">
+                <div class="input-group">
+                    <input type="email" id="reg-email" required placeholder=" ">
+                    <label for="reg-email">电子邮箱</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="reg-password" required placeholder=" ">
+                    <label for="reg-password">设置密码</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="reg-password-repeat" required placeholder=" ">
+                    <label for="reg-password-repeat">确认密码</label>
+                </div>
+                <div class="actions-right mt-4">
+                    <button class="btn-text" id="btn-back-login">已有账号？登录</button>
+                    <button class="btn-primary" id="btn-register">注册</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script src="./js/config.js"></script>
-    <script src="./js/auth.js"></script>
+    <script src="./js/common.js"></script>
+    <script src="./js/login.js"></script>
 </body>
 </html>
