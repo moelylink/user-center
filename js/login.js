@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 email: currentEmail,
                 options: { 
                     captchaToken: token, 
-                    emailRedirectTo: window.location.origin + '/user/?redirect=' + encodeURIComponent(getRedirectUrl())
+                    emailRedirectTo: window.location.origin + '/?redirect=' + encodeURIComponent(getRedirectUrl())
                 }
             });
             if (error) throw error;
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 password: pwd,
                 options: { 
                     captchaToken: token,
-                    emailRedirectTo: window.location.origin + '/user/?redirect=' + encodeURIComponent(getRedirectUrl())
+                    emailRedirectTo: window.location.origin + '/?redirect=' + encodeURIComponent(getRedirectUrl())
                 }
             });
             if (error) throw error;
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = await executeCaptcha();
             const { error } = await client.auth.resetPasswordForEmail(currentEmail, {
                 captchaToken: token,
-                redirectTo: window.location.origin + '/user/reset-password'
+                redirectTo: window.location.origin + '/reset-password'
             });
             if (error) throw error;
             Notifications.show('重置密码邮件已发送', 'success');
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     provider: provider,
                     options: {
                         captchaToken: token,
-                        redirectTo: window.location.origin + '/user/?redirect=' + encodeURIComponent(getRedirectUrl())
+                        redirectTo: window.location.origin + '/?redirect=' + encodeURIComponent(getRedirectUrl())
                     }
                 });
                 if (error) throw error;
