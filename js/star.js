@@ -1,40 +1,134 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // 检查 Supabase 客户端是否在 common.js 中初始化
+    // ----------------------------------------------------------------
+    // 0. 样式注入 (修复按钮样式 + 弹窗布局)
+    // ----------------------------------------------------------------
+    const fixedStyles = document.createElement('style');
+    fixedStyles.textContent = `
+        /* 强制覆盖全屏的遮罩层 */
+        .modal-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            z-index: 2147483647 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(2px);
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+
+        /* 弹窗卡片 */
+        .modal-card {
+            background: #ffffff;
+            width: 90%; max-width: 360px;
+            padding: 32px 24px 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            margin: auto;
+            color: #333;
+        }
+        [data-theme="dark"] .modal-card { background: #2c2c2c; color: #eee; }
+        .modal-overlay.active .modal-card { transform: scale(1); }
+
+        /* 图标与文字 */
+        .modal-icon {
+            width: 64px; height: 64px; border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .modal-icon.warning { background: #fff1f0; color: #ff4d4f; }
+        [data-theme="dark"] .modal-icon.warning { background: rgba(255, 77, 79, 0.2); }
+        .modal-icon .material-icons-round { font-size: 32px; }
+        
+        .modal-card h3 { margin: 0 0 12px; font-size: 20px; font-weight: 600; }
+        .modal-card p { margin: 0 0 24px; font-size: 14px; color: #666; line-height: 1.5; }
+        [data-theme="dark"] .modal-card p { color: #aaa; }
+
+        /* 按钮组 */
+        .modal-actions { display: flex; gap: 12px; justify-content: center; }
+        
+        /* 通用按钮样式 */
+        .modal-actions button {
+            flex: 1;
+            padding: 10px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        /* >>> 修复 2：强制指定 ID 的样式，确保取消按钮有外观 <<< */
+        #cancel-delete {
+            background: #f5f5f5;
+            color: #666;
+        }
+        #cancel-delete:hover { background: #e0e0e0; }
+        [data-theme="dark"] #cancel-delete { background: #3a3a3a; color: #ccc; }
+
+        #confirm-delete {
+            background: #ff4d4f;
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 77, 79, 0.3);
+        }
+        #confirm-delete:hover { background: #ff7875; }
+
+        /* 链接修复辅助样式 */
+        .img-link {
+            display: block;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            color: inherit;
+            text-decoration: none;
+        }
+    `;
+    document.head.appendChild(fixedStyles);
+
+    // ----------------------------------------------------------------
+    // 1. 初始化
+    // ----------------------------------------------------------------
     if (typeof client === 'undefined') {
         console.error('Supabase client not initialized.');
         return;
     }
 
-    // 1. 验证登录状态
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/user/login/';
+        window.location.href = '/login/';
         return;
     }
     const userId = session.user.id;
 
-    // 2. 状态变量管理
-    const itemsPerPage = 20; // 每页显示20张
-    let masonryInstance = null; // Masonry 实例
-    let itemToDelete = null; // 待删除的图片ID
+    // ----------------------------------------------------------------
+    // 2. 逻辑变量
+    // ----------------------------------------------------------------
+    const itemsPerPage = 20;
+    let masonryInstance = null;
+    let itemToDelete = null;
 
-    // 解析 URL 参数
     const params = new URLSearchParams(window.location.search);
     let currentPage = parseInt(params.get('page')) || 1;
-    // sort=2 代表从旧到新 (asc)，默认或 sort=1 代表从新到旧 (desc)
     let currentSort = params.get('sort') === '2' ? 'asc' : 'desc';
 
-    // 初始化 UI 控件状态
     const sortSelect = document.getElementById('sort-select');
-    if (sortSelect) {
-        sortSelect.value = params.get('sort') || '1';
-    }
-    const currentPageEl = document.getElementById('current-page');
-    if (currentPageEl) {
-        currentPageEl.textContent = currentPage;
-    }
+    if (sortSelect) sortSelect.value = params.get('sort') || '1';
 
-    // 3. 核心函数：加载数据并渲染
+    // ----------------------------------------------------------------
+    // 3. 加载数据
+    // ----------------------------------------------------------------
     async function loadImages() {
         const grid = document.getElementById('star-grid');
         const loading = document.getElementById('loading-state');
@@ -42,13 +136,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         const pagination = document.getElementById('pagination');
         const prevBtn = document.getElementById('prev-page');
         const nextBtn = document.getElementById('next-page');
+        const pageInfo = document.getElementById('current-page');
 
-        // 重置页面状态
+        if (pageInfo) pageInfo.textContent = currentPage;
         if (loading) loading.classList.remove('hidden');
         if (empty) empty.classList.add('hidden');
         if (pagination) pagination.classList.add('hidden');
         
-        // 销毁旧的 Masonry 实例，防止布局混乱
         if (masonryInstance) {
             masonryInstance.destroy();
             masonryInstance = null;
@@ -56,11 +150,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (grid) grid.innerHTML = '';
 
         try {
-            // 计算分页范围 (Supabase Range 是基于 0 索引的)
             const from = (currentPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
-            // 并行执行查询：获取当前页数据 + 获取总数量
             const [dataRes, countRes] = await Promise.all([
                 client
                     .from('bookmarks')
@@ -81,19 +173,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             const totalCount = countRes.count || 0;
             const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-            // 更新总数显示
             const totalCountEl = document.getElementById('total-count');
             if (totalCountEl) totalCountEl.textContent = `共 ${totalCount} 张`;
 
             if (loading) loading.classList.add('hidden');
 
-            // 处理空数据情况
             if (bookmarks.length === 0) {
                 if (empty) empty.classList.remove('hidden');
                 return;
             }
 
-            // 4. 生成 HTML 结构
+            // --- 渲染卡片 ---
             const fragment = document.createDocumentFragment();
             bookmarks.forEach(item => {
                 const date = new Date(item.created_at).toLocaleDateString();
@@ -101,22 +191,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                 div.className = 'grid-item';
                 div.setAttribute('data-id', item.id);
                 
-                // --- 关键修改：点击图片跳转到 https://www.moely.link/{url} ---
-                const targetUrl = `https://www.moely.link/${item.url}`;
+                const cleanPath = item.url.startsWith('/') ? item.url.substring(1) : item.url;
+                const targetUrl = `https://www.moely.link/${cleanPath}`;
                 
+                // >>>>> 修复 1：将 .item-overlay 放入 <a> 标签内部 <<<<<
+                // 这样无论点击遮罩层还是图片，实际上点击的都是 <a> 标签
                 div.innerHTML = `
-                    <a href="${targetUrl}" target="_blank" rel="noopener noreferrer">
+                    <a href="${targetUrl}" target="_blank" rel="noopener noreferrer" class="img-link">
                         <img src="${item.image}" alt="收藏图片" loading="lazy">
-                    </a>
-                    <div class="item-overlay">
-                        <div class="item-info">
-                            <span class="item-date">
-                                <span class="material-icons-round" style="font-size:14px">schedule</span>
-                                ${date}
-                            </span>
+                        <div class="item-overlay">
+                            <div class="item-info">
+                                <span class="item-date">
+                                    <span class="material-icons-round" style="font-size:14px">schedule</span>
+                                    ${date}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <button class="delete-btn" title="删除" onclick="openDeleteModal('${item.id}')">
+                    </a>
+                    <button class="delete-btn" title="删除" onclick="window.openDeleteModal('${item.id}')">
                         <span class="material-icons-round">delete</span>
                     </button>
                 `;
@@ -124,32 +216,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             grid.appendChild(fragment);
 
-            // 5. 初始化 Masonry 布局
-            // 使用 imagesLoaded 插件，确保所有图片下载完毕后再计算布局，防止重叠
+            // 初始化瀑布流
             if (typeof imagesLoaded !== 'undefined' && typeof Masonry !== 'undefined') {
                 imagesLoaded(grid, function() {
                     masonryInstance = new Masonry(grid, {
                         itemSelector: '.grid-item',
                         percentPosition: true,
-                        gutter: 16, // 对应 CSS 中的间隙
+                        gutter: 16,
                         transitionDuration: '0.3s'
                     });
-                    // 强制触发布局更新
                     masonryInstance.layout();
                 });
-            } else {
-                console.warn('Masonry or imagesLoaded library is missing.');
             }
 
-            // 6. 更新分页按钮状态
+            // 分页按钮
             if (totalPages > 1 && pagination) {
                 pagination.classList.remove('hidden');
-                
                 if (prevBtn) {
                     prevBtn.disabled = currentPage <= 1;
                     prevBtn.onclick = () => updateUrl('page', currentPage - 1);
                 }
-                
                 if (nextBtn) {
                     nextBtn.disabled = currentPage >= totalPages;
                     nextBtn.onclick = () => updateUrl('page', currentPage + 1);
@@ -157,66 +243,52 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
         } catch (err) {
-            console.error('Load error:', err);
+            console.error(err);
             if (loading) loading.classList.add('hidden');
-            Notifications.show('加载收藏失败: ' + err.message, 'error');
+            Notifications.show('加载失败: ' + err.message, 'error');
         }
     }
 
-    // 辅助函数：更新 URL 参数并刷新页面
     function updateUrl(key, value) {
         const url = new URL(window.location);
-        if (value) {
-            url.searchParams.set(key, value);
-        } else {
-            url.searchParams.delete(key);
-        }
-        
-        // 如果改变了排序方式，重置页码回第一页
-        if (key === 'sort') {
-            url.searchParams.set('page', 1);
-        }
-        
+        if (value) url.searchParams.set(key, value);
+        else url.searchParams.delete(key);
+        if (key === 'sort') url.searchParams.set('page', 1);
         window.location.href = url.toString();
     }
 
-    // 监听排序下拉框变化
     if (sortSelect) {
         sortSelect.addEventListener('change', (e) => {
-            // value="1" 为默认(新到旧)，不需要参数；value="2" 为旧到新
             const val = e.target.value === '1' ? null : '2';
             updateUrl('sort', val);
         });
     }
 
-    // =========================================
-    // 删除功能逻辑
-    // =========================================
+    // ----------------------------------------------------------------
+    // 4. 删除逻辑
+    // ----------------------------------------------------------------
     const modal = document.getElementById('delete-modal');
     const cancelBtn = document.getElementById('cancel-delete');
     const confirmBtn = document.getElementById('confirm-delete');
-    
-    // 暴露给全局，以便 HTML 中的 onclick="openDeleteModal(...)" 调用
+
     window.openDeleteModal = (id) => {
         itemToDelete = id;
         if (modal) modal.classList.add('active');
     };
 
-    // 关闭弹窗
     const closeModal = () => {
         if (modal) modal.classList.remove('active');
         itemToDelete = null;
     };
 
+    // 绑定事件
     if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
     
-    // 确认删除
     if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {
             if (!itemToDelete) return;
 
             try {
-                // 数据库删除操作
                 const { error } = await client
                     .from('bookmarks')
                     .delete()
@@ -224,42 +296,35 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (error) throw error;
 
-                // 界面移除元素 (避免刷新页面)
                 const itemEl = document.querySelector(`.grid-item[data-id="${itemToDelete}"]`);
                 if (itemEl && masonryInstance) {
                     masonryInstance.remove(itemEl);
-                    masonryInstance.layout(); // 重新计算布局
+                    masonryInstance.layout();
                 }
 
                 Notifications.show('删除成功', 'success');
                 closeModal();
-
-                // 更新总数显示（可选优化：重新获取 count 或手动 -1）
+                
+                // 刷新计数
                 const totalCountEl = document.getElementById('total-count');
                 if (totalCountEl) {
-                    const currentText = totalCountEl.textContent;
-                    const countMatch = currentText.match(/\d+/);
-                    if (countMatch) {
-                        const newCount = parseInt(countMatch[0]) - 1;
-                        totalCountEl.textContent = `共 ${newCount} 张`;
-                    }
+                    const txt = totalCountEl.textContent;
+                    const num = parseInt(txt.match(/\d+/)) - 1;
+                    totalCountEl.textContent = `共 ${num} 张`;
                 }
 
             } catch (err) {
-                console.error('Delete error:', err);
                 Notifications.show('删除失败: ' + err.message, 'error');
                 closeModal();
             }
         });
     }
 
-    // 点击遮罩层关闭弹窗
     if (modal) {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
         });
     }
 
-    // 页面加载时执行
     loadImages();
 });
