@@ -1,10 +1,11 @@
 document.addEventListener('DOMContentLoaded', async () => {
+    // 依赖 common.js
     if (typeof client === 'undefined') return;
 
     // 1. 验证登录
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/user/login/';
+        window.location.href = '/login';
         return;
     }
     const myId = session.user.id;
@@ -12,10 +13,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 定义系统通知虚拟用户
     const SYSTEM_BOT = {
         id: 'system_notification_bot',
-        username: '站内通知',
-        email: 'system@moely.link',
-        avatar_url: null,
-        isSystem: true // 标记位
+        email: '站内通知', // 因为没有 username，我们借用 email 字段显示名称
+        isSystem: true
     };
 
     // 状态管理
@@ -30,17 +29,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     const chatContainer = document.querySelector('.chat-container');
     const chatEmpty = document.getElementById('chat-empty');
     const chatContent = document.getElementById('chat-content');
-    const chatPane = document.getElementById('chat-pane'); // 用于切换只读模式
+    const chatPane = document.getElementById('chat-pane');
     const searchContainer = document.getElementById('new-chat-search');
 
     // ============================================================
-    // 2. 加载联系人列表 (系统通知 + 私信聚合)
+    // 2. 加载联系人列表
     // ============================================================
     async function loadContacts() {
         contactListEl.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
         
         try {
-            // A. 获取最新的系统通知预览
+            // A. 获取系统通知预览
             const { data: sysNotifs } = await client
                 .from('notifications')
                 .select('*')
@@ -51,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const lastSysMsg = sysNotifs && sysNotifs.length > 0 ? sysNotifs[0] : null;
 
             // B. 获取私信列表 (private_messages)
+            // 注意：确保你已经创建了 private_messages 表，如果没有，请看下文提示
             const { data: messages, error } = await client
                 .from('private_messages')
                 .select('sender_id, receiver_id, created_at, content')
@@ -66,13 +66,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (msg.receiver_id !== myId) contactIds.add(msg.receiver_id);
             });
 
-            // 获取私信用户信息
+            // 获取私信用户信息 (修复点：只查询 id 和 email)
             let profiles = [];
             if (contactIds.size > 0) {
                 const { data: pros, error: profileError } = await client
                     .from('profiles')
-                    .select('id, email, username, avatar_url')
+                    .select('id, email') // <--- 修改这里：去掉了 username 和 avatar_url
                     .in('id', Array.from(contactIds));
+                
                 if (profileError) throw profileError;
                 profiles = pros;
             }
@@ -93,7 +94,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (err) {
             console.error(err);
-            contactListEl.innerHTML = '<p style="color:red;text-align:center">加载失败</p>';
+            // 如果报错是因为 private_messages 表不存在，提示用户
+            if (err.message && err.message.includes('relation "private_messages" does not exist')) {
+                contactListEl.innerHTML = '<p style="color:red;text-align:center;padding:20px">请先在数据库创建 private_messages 表</p>';
+            } else {
+                contactListEl.innerHTML = '<p style="color:red;text-align:center">加载失败: ' + err.message + '</p>';
+            }
         }
     }
 
@@ -103,18 +109,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         div.className = 'contact-item';
         div.dataset.uid = user.id;
         
-        // 如果是系统通知，加个特殊样式
         if (user.isSystem) {
             div.classList.add('system-item');
         }
 
         div.onclick = () => selectChat(user);
         
-        const displayName = user.username || user.email;
-        // 如果是系统，显示喇叭图标；如果是用户，显示首字母
+        // 修复点：使用 email 作为显示名称，如果没有 email (异常情况) 则显示 "Unknown"
+        // 截取邮箱前缀作为显示的昵称，比如 "test@gmail.com" 显示 "test"
+        const rawName = user.email || 'Unknown';
+        const displayName = user.isSystem ? rawName : rawName.split('@')[0];
+        
+        // 头像逻辑：取首字母
         const initial = user.isSystem ? 
             '<span class="material-icons-round" style="font-size:20px">campaign</span>' : 
-            (displayName ? displayName[0].toUpperCase() : '?');
+            (rawName[0].toUpperCase());
 
         div.innerHTML = `
             <div class="avatar-placeholder">${initial}</div>
@@ -139,11 +148,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!email) return;
 
         try {
-            const { data, error } = await client.from('profiles').select('*').eq('email', email).single();
+            // 修复点：只查询 id 和 email
+            const { data, error } = await client
+                .from('profiles')
+                .select('id, email') 
+                .eq('email', email)
+                .single();
+
             if (error || !data) {
-                Notifications.show('未找到该用户', 'warning');
+                Notifications.show('未找到该用户，请检查邮箱', 'warning');
                 return;
             }
+
             if (data.id === myId) {
                 Notifications.show('不能给自己发消息', 'warning');
                 return;
@@ -152,7 +168,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             searchContainer.classList.add('hidden');
             document.getElementById('search-email-input').value = '';
             
-            // 如果不在列表里，加入缓存
             if (!contactsMap.has(data.id)) {
                 contactsMap.set(data.id, data);
             }
@@ -164,12 +179,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 4. 选择聊天对象 (区分系统 vs 私信)
+    // 4. 选择聊天对象
     // ============================================================
     async function selectChat(userProfile) {
         activeChatUser = userProfile;
         
-        // UI 高亮
         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
         const activeEl = document.querySelector(`.contact-item[data-uid="${userProfile.id}"]`);
         if (activeEl) activeEl.classList.add('active');
@@ -178,28 +192,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatContent.classList.remove('hidden');
         chatContainer.classList.add('active-chat');
 
-        document.getElementById('current-chat-name').textContent = userProfile.username || userProfile.email;
+        // 修复点：使用 email 显示
+        const rawName = userProfile.email || 'Unknown';
+        document.getElementById('current-chat-name').textContent = userProfile.isSystem ? rawName : rawName.split('@')[0];
+        
         messagesArea.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
 
-        // ----------------------------------------------------
-        // 分支 A: 如果是系统通知 (只读)
-        // ----------------------------------------------------
+        // 分支 A: 系统通知 (只读)
         if (userProfile.isSystem) {
-            // 隐藏输入框
             chatPane.classList.add('read-only');
             
             try {
-                // 查询 notifications 表
                 const { data: notifs, error } = await client
                     .from('notifications')
                     .select('*')
                     .eq('user_id', myId)
-                    .order('created_at', { ascending: true }); // 按时间正序排列
+                    .order('created_at', { ascending: true });
 
                 if (error) throw error;
                 renderSystemMessages(notifs);
-
-                // 标记所有未读为已读 (可选)
+                
+                // 标记已读
                 await client.from('notifications').update({ is_read: true }).eq('user_id', myId).eq('is_read', false);
 
             } catch (err) {
@@ -207,16 +220,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 messagesArea.innerHTML = '<p style="text-align:center">加载通知失败</p>';
             }
         } 
-        // ----------------------------------------------------
-        // 分支 B: 如果是普通私信 (可回复)
-        // ----------------------------------------------------
+        // 分支 B: 私信 (可回复)
         else {
-            // 显示输入框
             chatPane.classList.remove('read-only');
             sendBtn.disabled = false;
 
             try {
-                // 查询 private_messages 表
                 const { data: messages, error } = await client
                     .from('private_messages')
                     .select('*')
@@ -233,7 +242,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 渲染系统通知列表
     function renderSystemMessages(notifications) {
         messagesArea.innerHTML = '';
         if (notifications.length === 0) {
@@ -243,24 +251,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         notifications.forEach(note => {
             const div = document.createElement('div');
-            // 系统消息使用特殊样式，居中显示
             div.className = 'message-bubble system-msg';
-            
-            // 组装内容：如果有标题，加粗显示
             let html = '';
             if (note.title) {
                 html += `<div class="system-msg-title">${escapeHtml(note.title)}</div>`;
             }
             html += escapeHtml(note.content);
             html += `<div class="message-time">${new Date(note.created_at).toLocaleString()}</div>`;
-
             div.innerHTML = html;
             messagesArea.appendChild(div);
         });
         scrollToBottom();
     }
 
-    // 渲染私信列表 (保持之前逻辑)
     function renderPrivateMessages(messages) {
         messagesArea.innerHTML = '';
         if (messages.length === 0) {
@@ -295,11 +298,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================================
-    // 5. 发送私信 (只对普通用户有效)
+    // 5. 发送私信
     // ============================================================
     async function sendMessage() {
         const text = msgInput.value.trim();
-        // 双重检查：如果当前是系统通知模式，禁止发送
         if (!text || !activeChatUser || activeChatUser.isSystem) return;
 
         const tempMsg = {
@@ -336,10 +338,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 6. 实时监听 (同时监听私信和系统通知)
+    // 6. 实时监听
     // ============================================================
     
-    // 监听私信
+    // 私信监听
     client.channel('public:private_messages')
         .on('postgres_changes', { 
             event: 'INSERT', 
@@ -348,18 +350,17 @@ document.addEventListener('DOMContentLoaded', async () => {
             filter: `receiver_id=eq.${myId}` 
         }, (payload) => {
             const newMsg = payload.new;
-            // 如果正和此人聊天
             if (activeChatUser && !activeChatUser.isSystem && newMsg.sender_id === activeChatUser.id) {
                 appendMessageUI(newMsg);
                 client.from('private_messages').update({ is_read: true }).eq('id', newMsg.id);
             } else {
                 Notifications.show(`收到新私信`, 'info');
-                loadContacts(); // 刷新列表预览
+                loadContacts(); 
             }
         })
         .subscribe();
 
-    // 监听系统通知
+    // 通知监听
     client.channel('public:notifications')
         .on('postgres_changes', {
             event: 'INSERT',
@@ -368,23 +369,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             filter: `user_id=eq.${myId}`
         }, (payload) => {
             const newNote = payload.new;
-            // 如果正打开系统通知页面
             if (activeChatUser && activeChatUser.isSystem) {
-                // 手动刷新一下列表即可，或者手动插入DOM
                 selectChat(SYSTEM_BOT); 
             } else {
                 Notifications.show(`收到系统通知: ${newNote.title || '新消息'}`, 'info');
-                loadContacts(); // 刷新列表预览
+                loadContacts();
             }
         })
         .subscribe();
 
-    // 移动端返回
     document.getElementById('back-to-contacts').addEventListener('click', () => {
         chatContainer.classList.remove('active-chat');
         activeChatUser = null;
     });
 
-    // 初始加载
     loadContacts();
 });
