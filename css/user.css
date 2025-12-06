@@ -642,3 +642,47 @@ body {
     margin-bottom: 4px;
     font-size: 15px;
 }
+
+/* =========================================
+   红点通知 (Badges)
+   ========================================= */
+
+/* 1. 侧边栏的小红点 (仅显示点，不显示数字) */
+.sidebar-badge {
+    width: 8px;
+    height: 8px;
+    background-color: #ff4d4f;
+    border-radius: 50%;
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    box-shadow: 0 0 0 2px var(--card-bg); /* 增加一点光晕，适配深色模式 */
+    display: none; /* 默认隐藏 */
+}
+.sidebar-badge.show { display: block; }
+
+/* 侧边栏项需要相对定位 */
+.sidebar-item { position: relative; }
+
+
+/* 2. 联系人列表的数字徽标 (显示未读数量) */
+.unread-badge {
+    background-color: #ff4d4f;
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 5px;
+    margin-left: auto; /* 挤到最右边 */
+    display: none; /* 默认隐藏 */
+}
+.unread-badge.show { display: flex; }
+
+/* 调整联系人项布局，防止挤压 */
+.contact-item { padding-right: 12px; }
