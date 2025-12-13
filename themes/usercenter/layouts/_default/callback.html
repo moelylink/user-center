@@ -7,11 +7,9 @@
     <link rel="shortcut icon" href="{{ $.Site.Params.images.favicon }}">
 </head>
 <body>
-    <script>
-        window.onload = function(){
-            const redirect = params.get('redirect');
-            if(redirect && redirect.includes('moely.link'))  window.location.href = redirect;
-            else window.location.href = '/';
-        }
+    <script type="text/javascript">
+        const redirect = params.get('redirect');
+        if(redirect && redirect.includes('moely.link'))  window.location.href = redirect;
+        else window.location.href = '/';
     </script>
 </body>
