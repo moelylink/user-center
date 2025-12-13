@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 情况 1: 明确捕获到 RECOVERY 事件 (最理想情况)
         if (event === 'PASSWORD_RECOVERY') {
             switchStep('update');
-            Notifications.show('验证成功，请设置新密码', 'info');
+            Notifications.show('验证成功，请设置新密码', 'success');
             return;
         } 
         
