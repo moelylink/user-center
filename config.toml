@@ -12,9 +12,10 @@ home = ["HTML", "JSON"]
 
 [params]
     author        = "萌哩（moely）"
+    description   = "萌哩（moely）用户中心。用户可以登陆账号并在此处修改账号信息，绑定第三方账号登录方式，使用收藏列表等特色功能。"
 
 [params.images]
-    favicon       = "/assets/img/favicon.png"
+    favicon       = "/img/favicon.png"
 
 [markup.goldmark.renderer]
     unsafe = true
