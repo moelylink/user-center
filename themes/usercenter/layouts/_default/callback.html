@@ -6,13 +6,16 @@
     <title>正在跳转...</title>
     <link rel="shortcut icon" href="{{ $.Site.Params.images.favicon }}">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>    
+    <script src="{{ absURL "js/common.js"}}"></script> 
 </head>
 <body>
+    正在跳转，请稍候...
     <script type="text/javascript">
-        window.onload = function(){
+        setTimeout(() => {            
+            const params = new URLSearchParams(window.location.search);
             const redirect = params.get('redirect');
             if(redirect && redirect.includes('moely.link'))  window.location.href = redirect;
             else window.location.href = "/";
-        }
+        }, 1000);
     </script>
 </body>
