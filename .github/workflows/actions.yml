@@ -1,4 +1,4 @@
-name: Hugo Actions # 名字自取
+name: Actions # 名字自取
 
 on:
   push:
