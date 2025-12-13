@@ -1,0 +1,58 @@
+{{ partial "header.html" . }}
+
+{{ partial "sidebar.html" . }}
+
+    <main class="main-content chat-wrapper">
+        <div class="chat-container">
+            <div class="contact-pane" id="contact-pane">
+                <div class="pane-header">
+                    <h3>消息</h3>
+                    <button class="icon-btn" id="btn-new-chat" title="发起新私信">
+                        <span class="material-icons-round">add_comment</span>
+                    </button>
+                </div>
+                <div class="search-bar-container hidden" id="new-chat-search">
+                    <input type="email" id="search-email-input" placeholder="输入对方邮箱..." autocomplete="off">
+                    <button id="btn-search-confirm" class="btn-sm btn-primary">确定</button>
+                </div>
+
+                <div class="contact-list" id="contact-list">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <div class="chat-pane" id="chat-pane">
+                <div class="chat-empty" id="chat-empty">
+                    <span class="material-icons-round">chat_bubble_outline</span>
+                    <p>选择一个联系人开始聊天</p>
+                </div>
+
+                <div class="chat-content hidden" id="chat-content">
+                    <div class="chat-header">
+                        <button class="icon-btn mobile-only" id="back-to-contacts">
+                            <span class="material-icons-round">arrow_back</span>
+                        </button>
+                        <div class="header-info">
+                            <span class="material-icons-round avatar-placeholder">person</span>
+                            <span id="current-chat-name">用户名称</span>
+                        </div>
+                    </div>
+
+                    <div class="messages-area" id="messages-area">
+                        </div>
+
+                    <div class="input-area">
+                        <textarea id="message-input" placeholder="输入消息..." rows="1"></textarea>
+                        <button id="btn-send-message" class="icon-btn send-btn" disabled>
+                            <span class="material-icons-round">send</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="{{ absURL "js/common.js"}}"></script>
+    <script src="{{ absURL "js/message.js"}}"></script>
+</body>
+</html>

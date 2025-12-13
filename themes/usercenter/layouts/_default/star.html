@@ -1,0 +1,55 @@
+{{ partial "header.html" . }}
+
+{{ partial "sidebar.html" . }}
+
+    <main class="main-content">
+        <div class="container-fluid"> <div class="page-header">
+                <h1 class="page-title">美图收藏</h1>
+                
+                <div class="toolbar">
+                    <span class="text-secondary" id="total-count">加载中...</span>
+                    <select id="sort-select" class="form-select">
+                        <option value="1">从新到旧</option>
+                        <option value="2">从旧到新</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="masonry-grid" id="star-grid">
+                </div>
+            
+            <div id="loading-state" class="state-container">
+                <div class="spinner"></div>
+                <p>正在加载收藏...</p>
+            </div>
+            <div id="empty-state" class="state-container hidden">
+                <span class="material-icons-round empty-icon">collections</span>
+                <p>暂无收藏图片</p>
+            </div>
+
+            <div class="pagination-container hidden" id="pagination">
+                <button class="btn-outline" id="prev-page" disabled>上一页</button>
+                <span class="page-info">第 <span id="current-page">1</span> 页</span>
+                <button class="btn-outline" id="next-page">下一页</button>
+            </div>
+        </div>
+    </main>
+
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-card">
+            <div class="modal-icon warning">
+                <span class="material-icons-round">delete_forever</span>
+            </div>
+            <h3>确认删除</h3>
+            <p>确定要删除这张收藏的图片吗？此操作无法撤销。</p>
+            <div class="modal-actions">
+                <button class="btn-text" id="cancel-delete">取消</button>
+                <button class="btn-danger" id="confirm-delete">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ absURL "js/common.js"}}"></script>
+    <script src="{{ absURL "js/star.js"}}"></script>
+</body>
+</html>

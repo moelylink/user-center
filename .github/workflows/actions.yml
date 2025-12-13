@@ -1,0 +1,40 @@
+name: Hugo Actions # 名字自取
+
+on:
+  push:
+    branches:
+      - main  # 这里的意思是当 main 分支发生 push 的时候，运行下面的 jobs
+
+jobs:
+  deploy: 
+    runs-on: ubuntu-latest 	# 在什么环境运行任务
+    steps:
+      - uses: actions/checkout@v4   # 引用 actions/checkout 这个 action，与所在的 github 仓库同名
+        with:
+         submodules: true  # Fetch Hugo themes (true OR recursive) 获取 submodule 主题
+         fetch-depth: 0    # Fetch all history for .GitInfo and .Lastmod
+         
+      - name: Setup Hugo	# 步骤名自取
+        uses: peaceiris/actions-hugo@v2   # Hugo 官方提供的 action，用于在任务环境中获取 hugo
+        with:
+          hugo-version: '0.151.0'	# 获取指定版本的 hugo
+          extended: false
+
+      - name: Build Site
+        run: |
+          pwd
+          ls
+          hugo --themesDir ./themes --baseURL https://user.moely.link/ --minify
+          
+      - name: 提交更新
+        uses: cpina/github-action-push-to-another-repository@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.ACCESS_TOKEN }}
+        with:
+          source-directory: 'public'
+          destination-github-username: 'moelylink'
+          destination-repository-name: 'user-center'
+          user-email: 110507373+abcxyz-123456@users.noreply.github.com
+          target-branch: main
+          clean: true
+          commit-message: '${{ github.event.head_commit.message }}'

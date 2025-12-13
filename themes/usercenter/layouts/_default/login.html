@@ -1,0 +1,116 @@
+{{ partial "header.html" . }}
+
+<body>
+    <div class="bg-layer"></div>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <button id="menu-btn" class="icon-btn nav-icon-btn mobile-only">
+                <span class="material-icons-round">menu</span>
+            </button>
+            <a href="/" class="brand-logo">萌哩</a>
+        </div>
+        
+        <div class="nav-links desktop-only">
+            <a href="https://www.moely.link/" class="nav-link">萌哩主站</a>
+            <a href="https://anime.moely.link/" class="nav-link">萌哩番剧</a>
+        </div>
+
+        <div class="nav-right">
+            <button id="theme-toggle" class="icon-btn nav-icon-btn" aria-label="切换主题">
+                <span class="material-icons-round">dark_mode</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="brand-logo">萌哩</span>
+            <button id="close-sidebar" class="icon-btn">
+                <span class="material-icons-round">close</span>
+            </button>
+        </div>
+        <div class="sidebar-menu">
+            <a href="https://www.moely.link/" class="sidebar-item">萌哩主站</a>
+            <a href="https://anime.moely.link/" class="sidebar-item">萌哩番剧</a>
+        </div>
+    </aside>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h2 id="auth-title">登录</h2>
+                <p id="auth-subtitle">使用您的 萌哩 账号</p>
+            </div>
+
+            <div id="step-email" class="auth-step active">
+                <div class="input-group">
+                    <input type="email" id="input-email" required placeholder=" ">
+                    <label for="input-email">电子邮箱</label>
+                </div>
+                <div class="actions-right">
+                    <button class="btn-text" id="btn-to-register">创建账号</button>
+                    <button class="btn-primary" id="btn-next">下一步</button>
+                </div>
+                
+                <div class="divider"><span>或通过第三方登录</span></div>
+                
+                <div class="social-login">
+                    <button class="social-btn" data-provider="google" title="Google 登录">
+                        <i class="fa-brands fa-google"></i>
+                    </button>
+                    <button class="social-btn" data-provider="github" title="GitHub 登录">
+                        <i class="fa-brands fa-github"></i>
+                    </button>
+                    <button class="social-btn" data-provider="azure" title="Microsoft 登录">
+                        <i class="fa-brands fa-microsoft"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="step-password" class="auth-step">
+                <div class="user-chip" id="user-chip">
+                    <span class="material-icons-round">account_circle</span>
+                    <span id="display-email"></span>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="input-password" required placeholder=" ">
+                    <label for="input-password">输入密码</label>
+                </div>
+                <div class="actions-left-right">
+                    <button class="btn-text" id="btn-forgot-pwd">忘记密码？</button>
+                </div>
+                <div class="actions-right mt-4">
+                    <button class="btn-text" id="btn-back-email">返回</button>
+                    <button class="btn-outlined" id="btn-otp-login">发送验证码登录</button>
+                    <button class="btn-primary" id="btn-login">登录</button>
+                </div>
+            </div>
+
+            <div id="step-register" class="auth-step">
+                <div class="input-group">
+                    <input type="email" id="reg-email" required placeholder=" ">
+                    <label for="reg-email">电子邮箱</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="reg-password" required placeholder=" ">
+                    <label for="reg-password">设置密码</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="reg-password-repeat" required placeholder=" ">
+                    <label for="reg-password-repeat">确认密码</label>
+                </div>
+                <div style="margin-top: 0; margin-bottom: 20px; font-size: 12px;">*密码需不少于8位，且包含大小写字母和特殊字符</div>
+                <div class="actions-right mt-4">
+                    <button class="btn-text" id="btn-back-login">已有账号？登录</button>
+                    <button class="btn-primary" id="btn-register">注册</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="{{ absURL "js/common.js"}}"></script>
+    <script src="{{ absURL "js/login.js"}}"></script>
+</body>
+</html>

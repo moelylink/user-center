@@ -1,0 +1,20 @@
+baseURL               = "https://user.moely.link/"
+languageCode          = "zh-CN"
+title                 = "萌哩用户中心"
+theme                 = "usercenter"
+preserveTaxonomyNames = true
+disablePathToLower    = true
+hasCJKLanguage        = true
+publishDir            = "public"
+
+[outputs]
+home = ["HTML", "JSON"]
+
+[params]
+    author        = "萌哩（moely）"
+
+[params.images]
+    favicon       = "/assets/img/favicon.png"
+
+[markup.goldmark.renderer]
+    unsafe = true
