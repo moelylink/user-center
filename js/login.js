@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
         if (redirect) {
-            if(redirect.includes('moely.link')) return redirect;
+            if(redirect.includes('moely.link')) return "https://user.moely.link/callback/?redirect=" + redirect;
             if(redirect.startsWith('/')) return "https://user.moely.link" + redirect;
         }
         return 'https://user.moely.link/'; 
