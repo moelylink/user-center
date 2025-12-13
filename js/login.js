@@ -58,11 +58,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 动态更新标题
         if (stepName === 'email') {
             elements.title.textContent = '登录';
-            elements.subtitle.textContent = '使用您的 Moely 账号';
+            elements.subtitle.textContent = '使用您的 萌哩 账号';
         } else if (stepName === 'password') {
             elements.title.textContent = '欢迎回来';
             elements.subtitle.textContent = '请输入密码以继续';
-            if(elements.displayEmail) elements.displayEmail.textContent = currentEmail; 
+            if(elements.displayEmail) elements.displayEmail.textContent = currentEmail;
+        } else if (stepName === 'register') {
+            elements.title.textContent = '创建账号';
+            elements.subtitle.textContent = '注册一个新的 萌哩 账号';
+            
+            // 邮箱同步逻辑
+            if (currentEmail) {
+                elements.regEmail.value = currentEmail;
+                // 暂时添加 style 触发 focus 效果，或者依赖 css :not(:placeholder-shown)
+            } else {
+                elements.regEmail.value = '';
+            }
         } else if (stepName === 'forgot') {
             elements.title.textContent = '重置密码';
             elements.subtitle.textContent = '通过邮箱找回账号';
@@ -174,7 +185,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userChip = document.getElementById('user-chip');
     if(userChip) userChip.addEventListener('click', () => switchStep('email'));
 
-    // 4. 登录
+    // 4. 从注册页返回登录
+    document.getElementById('btn-back-login').addEventListener('click', () => {
+        const regEmailVal = elements.regEmail.value.trim();
+        if (regEmailVal) currentEmail = regEmailVal;
+
+        if (currentEmail) {
+            elements.inputEmail.value = currentEmail;
+            switchStep('password');
+        } else {
+            switchStep('email');
+        }
+    });
+
+    // 5. 登录
     document.getElementById('btn-login').addEventListener('click', async () => {
         const password = document.getElementById('input-password').value;
         if (!password) return Notifications.show('请输入密码', 'warning');
@@ -193,13 +217,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 5. 注册
+    // 6. OTP 登录
+    document.getElementById('btn-otp-login').addEventListener('click', async () => {
+        try {
+            const token = await executeCaptcha();
+            const { error } = await client.auth.signInWithOtp({
+                email: currentEmail,
+                options: { 
+                    captchaToken: token, 
+                    emailRedirectTo: getRedirectUrl()
+                }
+            });
+            if (error) throw error;
+            Notifications.show('登录链接已发送至您的邮箱', 'success');
+        } catch (err) {
+            if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
+        }
+    });
+
+    // 7. 注册
     document.getElementById('btn-register').addEventListener('click', async () => {
         const email = elements.regEmail.value.trim();
         const pwd = document.getElementById('reg-password').value;
         const pwdR = document.getElementById('reg-password-repeat').value;
 
         if (!email) return Notifications.show('请输入电子邮箱', 'warning');
+        if (!/^\S+@\S+\.\S+$/.test(email)) return Notifications.show('邮箱格式不正确', 'warning');
         if (pwd.length < 8) return Notifications.show('密码长度需大于8位', 'warning');
         if (pwd !== pwdR) return Notifications.show('两次密码输入不一致', 'warning');
 
@@ -279,7 +322,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 第三方登录 & Passkey
+    // 8. 第三方登录 & Passkey
     document.querySelectorAll('.social-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const provider = e.currentTarget.getAttribute('data-provider');
