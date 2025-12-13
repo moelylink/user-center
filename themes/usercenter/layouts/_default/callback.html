@@ -2,14 +2,17 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0,user-scalable=no,minimal-ui">
+    <meta name=robots content="noindex, nofollow">
     <title>正在跳转...</title>
     <link rel="shortcut icon" href="{{ $.Site.Params.images.favicon }}">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>    
 </head>
 <body>
     <script type="text/javascript">
-        const redirect = params.get('redirect');
-        if(redirect && redirect.includes('moely.link'))  window.location.href = redirect;
-        else window.location.href = '/';
+        window.onload = function(){
+            const redirect = params.get('redirect');
+            if(redirect && redirect.includes('moely.link'))  window.location.href = redirect;
+            else window.location.href = "/";
+        }
     </script>
 </body>
