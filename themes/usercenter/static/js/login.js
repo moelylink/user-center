@@ -2,6 +2,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 依赖 common.js
     if (typeof client === 'undefined') return;
 
+    // ============================================================
+    // 0. 核心修复：极速拦截 Recovery 状态
+    // ============================================================
+    // 必须在 Supabase 客户端初始化和清除 Hash 之前捕获它
+    // 一旦捕获到，将此状态“锁死”在变量中，后续无论 Hash 是否消失，都以此为准
+    const hash = window.location.hash;
+    const isRecoveryFlow = hash && hash.includes('type=recovery');
+    
+    if (isRecoveryFlow) {
+        console.log("🔒 检测到重置密码流程，已锁定跳转逻辑。");
+    }
+
     // 状态变量
     let currentEmail = '';
     const SITE_KEY = '8f124646-ac04-496c-85b6-6396e8b8da3c'; 
@@ -103,28 +115,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================================
-    // 监听 Auth 状态 (核心：处理重置密码回调)
+    // 监听 Auth 状态 (修复版)
     // ============================================================
     client.auth.onAuthStateChange(async (event, session) => {
-        // 当用户点击邮件链接跳转回来时，事件为 PASSWORD_RECOVERY
+        // 调试日志
+        console.log("Auth Event:", event);
+
+        // 情况 1: 明确捕获到 RECOVERY 事件 (最理想情况)
         if (event === 'PASSWORD_RECOVERY') {
-            switchStep('update'); // 直接显示设置新密码的界面
+            switchStep('update');
             Notifications.show('验证成功，请设置新密码', 'info');
+            return;
         } 
-        else if (event === 'SIGNED_IN') {
-            // 普通登录成功，延迟跳转（防止覆盖 RECOVERY 事件）
-            setTimeout(() => {
-                // 如果 URL 里包含 type=recovery，说明是重置流程，不要跳走
-                const isRecovery = window.location.hash.includes('type=recovery');
-                if (!isRecovery) {
-                    window.location.href = getRedirectUrl();
+        
+        // 情况 2: 捕获到 SIGNED_IN 事件 (Supabase 恢复链接本质上也是一次登录)
+        if (event === 'SIGNED_IN') {
+            // >>> 关键修改：检查我们在页面加载初期捕获的变量 <<<
+            if (isRecoveryFlow) {
+                console.log("拦截自动跳转，进入重置密码界面");
+                switchStep('update');
+                
+                // 只有当 session 存在时才显示提示，避免误报
+                if (session) {
+                    Notifications.show('请设置您的新密码', 'info');
                 }
-            }, 500);
+            } else {
+                // 只有在【非】重置模式下，才执行自动跳转
+                setTimeout(() => {
+                    // 双重保险：再次检查 URL (虽然 hash 可能已经被清除了)
+                    // 但主要依赖上面的 isRecoveryFlow 变量
+                    window.location.href = getRedirectUrl();
+                }, 500);
+            }
         }
     });
 
     // ============================================================
-    // 常规登录/注册逻辑
+    // 常规登录/注册逻辑 (保持不变)
     // ============================================================
 
     // 1. 输入邮箱 -> 下一步
@@ -195,7 +222,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 重置密码逻辑 (标准流程)
+    // 重置密码逻辑
     // ============================================================
 
     // A. 点击"忘记密码" -> 进入邮箱输入页
@@ -216,7 +243,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const token = await executeCaptcha();
             const { error } = await client.auth.resetPasswordForEmail(email, {
                 captchaToken: token,
-                redirectTo: getRedirectUrl()
+                redirectTo: "https://user.moely.link/login/" // 强制跳回登录页处理
             });
             if (error) throw error;
             Notifications.show('重置邮件已发送，请查收', 'success');
@@ -252,7 +279,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 第三方登录 & Passkey (保持不变)
+    // 第三方登录 & Passkey
     document.querySelectorAll('.social-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const provider = e.currentTarget.getAttribute('data-provider');
