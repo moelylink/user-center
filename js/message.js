@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     const myId = session.user.id;
 
-    // 定义系统通知虚拟用户
     const SYSTEM_BOT = {
         id: 'system_notification_bot',
         email: '站内通知',
@@ -19,7 +18,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 状态管理
     let activeChatUser = null; 
-    let contactsMap = new Map(); 
+    let contactsMap = new Map();
+    // 新增：用于存储每个联系人的未读数
+    let unreadCounts = new Map(); 
 
     // DOM 元素
     const contactListEl = document.getElementById('contact-list');
@@ -33,7 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchContainer = document.getElementById('new-chat-search');
 
     // ============================================================
-    // 辅助函数 (修复 escapeHtml not defined)
+    // 辅助函数
     // ============================================================
     function escapeHtml(text) {
         if (!text) return '';
@@ -49,36 +50,49 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================================
-    // 2. 加载联系人列表
+    // 2. 加载联系人列表 (修复红点显示)
     // ============================================================
     async function loadContacts() {
         contactListEl.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
         
         try {
-            // A. 获取系统通知预览
+            // A. 获取系统通知 (预览 + 未读数)
             const { data: sysNotifs } = await client
                 .from('notifications')
                 .select('*')
                 .eq('user_id', myId)
-                .order('created_at', { ascending: false })
-                .limit(1);
+                .order('created_at', { ascending: false });
             
             const lastSysMsg = sysNotifs && sysNotifs.length > 0 ? sysNotifs[0] : null;
+            
+            // 统计系统通知未读数
+            const sysUnreadCount = sysNotifs ? sysNotifs.filter(n => !n.is_read).length : 0;
+            unreadCounts.set(SYSTEM_BOT.id, sysUnreadCount);
 
             // B. 获取私信列表
             const { data: messages, error } = await client
                 .from('private_messages')
-                .select('sender_id, receiver_id, created_at, content')
+                .select('sender_id, receiver_id, created_at, content, is_read')
                 .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
 
-            // 提取私信联系人 ID
+            // 提取联系人 & 统计私信未读数
             const contactIds = new Set();
+            
             messages.forEach(msg => {
+                // 收集 ID
                 if (msg.sender_id !== myId) contactIds.add(msg.sender_id);
                 if (msg.receiver_id !== myId) contactIds.add(msg.receiver_id);
+
+                // >>> 修复核心：统计未读数 <<<
+                // 如果我是接收者，且消息未读
+                if (msg.receiver_id === myId && !msg.is_read) {
+                    const sender = msg.sender_id;
+                    const current = unreadCounts.get(sender) || 0;
+                    unreadCounts.set(sender, current + 1);
+                }
             });
 
             // 获取私信用户信息
@@ -97,7 +111,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             contactListEl.innerHTML = '';
             contactsMap.clear();
 
-            // --- 1. 渲染【站内通知】置顶 ---
+            // --- 1. 渲染【站内通知】 ---
             renderContactItem(SYSTEM_BOT, lastSysMsg ? lastSysMsg.title || lastSysMsg.content : '暂无系统通知');
 
             // --- 2. 渲染【私信联系人】 ---
@@ -113,7 +127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 渲染单个联系人条目
+    // 渲染单个联系人条目 (修复红点 HTML)
     function renderContactItem(user, previewText) {
         const div = document.createElement('div');
         div.className = 'contact-item';
@@ -132,20 +146,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             '<span class="material-icons-round" style="font-size:20px">campaign</span>' : 
             (rawName[0].toUpperCase());
 
-        // 注意：这里没有渲染红点，因为红点由 common.js 统一管理，或者你需要在这里重新集成红点渲染逻辑
-        // 为了简单，我们依赖 UnreadBadge.init() 之后的自动更新
-        
+        // >>> 修复：获取未读数并生成 HTML <<<
+        const count = unreadCounts.get(user.id) || 0;
+        const badgeHtml = count > 0 
+            ? `<div class="unread-badge show">${count > 99 ? '99+' : count}</div>` 
+            : `<div class="unread-badge"></div>`;
+
         div.innerHTML = `
             <div class="avatar-placeholder">${initial}</div>
             <div class="contact-info">
                 <div class="contact-name">${displayName}</div>
                 <div class="contact-preview">${escapeHtml(previewText)}</div>
             </div>
-            <div class="unread-badge"></div> `;
+            ${badgeHtml}
+        `;
         contactListEl.appendChild(div);
-        
-        // 尝试手动触发一次红点检查以更新当前列表的红点
-        if (window.UnreadBadge) window.UnreadBadge.check();
     }
 
     // ============================================================
@@ -191,20 +206,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 4. 选择聊天对象
+    // 4. 选择聊天对象 (清除红点)
     // ============================================================
     async function selectChat(userProfile) {
         activeChatUser = userProfile;
         
-        // UI 高亮
+        // UI 高亮 & 清除该项红点
         document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('active'));
         const activeEl = document.querySelector(`.contact-item[data-uid="${userProfile.id}"]`);
         if (activeEl) {
             activeEl.classList.add('active');
-            // 立即清除界面上的红点
             const badge = activeEl.querySelector('.unread-badge');
             if (badge) badge.classList.remove('show');
         }
+
+        // 本地计数清零
+        unreadCounts.set(userProfile.id, 0);
 
         chatEmpty.classList.add('hidden');
         chatContent.classList.remove('hidden');
@@ -216,7 +233,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         messagesArea.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
 
         // ----------------------------------------------------
-        // 分支 A: 系统通知 (只读)
+        // 分支 A: 系统通知
         // ----------------------------------------------------
         if (userProfile.isSystem) {
             chatPane.classList.add('read-only');
@@ -233,8 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 // 标记已读
                 await client.from('notifications').update({ is_read: true }).eq('user_id', myId).eq('is_read', false);
-                
-                // 通知 common.js 更新全局红点
+                // 更新全局侧边栏红点
                 if (window.UnreadBadge) window.UnreadBadge.check();
 
             } catch (err) {
@@ -243,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } 
         // ----------------------------------------------------
-        // 分支 B: 私信 (可回复)
+        // 分支 B: 私信
         // ----------------------------------------------------
         else {
             chatPane.classList.remove('read-only');
@@ -265,8 +281,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     .eq('receiver_id', myId)
                     .eq('sender_id', userProfile.id)
                     .eq('is_read', false);
-
-                // 通知 common.js 更新全局红点
+                
+                // 更新全局侧边栏红点
                 if (window.UnreadBadge) window.UnreadBadge.check();
 
             } catch (err) {
@@ -327,7 +343,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ============================================================
     async function sendMessage() {
         const text = msgInput.value.trim();
-        // 如果是系统通知模式，禁止发送
         if (!text || !activeChatUser || activeChatUser.isSystem) return;
 
         const tempMsg = {
@@ -364,7 +379,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 6. 实时监听 (Realtime)
+    // 6. 实时监听 (增加更新具体联系人红点逻辑)
     // ============================================================
     
     // 监听私信
@@ -381,10 +396,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (activeChatUser && !activeChatUser.isSystem && newMsg.sender_id === activeChatUser.id) {
                 appendMessageUI(newMsg);
                 await client.from('private_messages').update({ is_read: true }).eq('id', newMsg.id);
-            } else {
+            } 
+            else {
+                // 如果没在聊 -> 增加该用户的红点
+                const senderId = newMsg.sender_id;
+                const current = unreadCounts.get(senderId) || 0;
+                unreadCounts.set(senderId, current + 1);
+
+                // 更新 DOM
+                const itemEl = document.querySelector(`.contact-item[data-uid="${senderId}"]`);
+                if (itemEl) {
+                    const badge = itemEl.querySelector('.unread-badge');
+                    if (badge) {
+                        badge.textContent = (current + 1) > 99 ? '99+' : (current + 1);
+                        badge.classList.add('show');
+                    }
+                    // 更新预览
+                    const preview = itemEl.querySelector('.contact-preview');
+                    if(preview) preview.textContent = newMsg.content;
+                } else {
+                    // 如果列表里没这个人（新聊天），刷新列表
+                    loadContacts();
+                }
+
                 Notifications.show(`收到新私信`, 'info');
-                // 刷新联系人列表以更新预览
-                loadContacts(); 
             }
         })
         .subscribe();
@@ -399,7 +434,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, (payload) => {
             const newNote = payload.new;
             if (activeChatUser && activeChatUser.isSystem) {
-                // 如果正打开着系统通知，手动刷新内容
                 const div = document.createElement('div');
                 div.className = 'message-bubble system-msg';
                 let html = '';
@@ -409,12 +443,21 @@ document.addEventListener('DOMContentLoaded', async () => {
                 div.innerHTML = html;
                 messagesArea.appendChild(div);
                 scrollToBottom();
-                
-                // 标记已读
                 client.from('notifications').update({ is_read: true }).eq('id', newNote.id);
             } else {
+                // 更新系统通知红点
+                const current = unreadCounts.get(SYSTEM_BOT.id) || 0;
+                unreadCounts.set(SYSTEM_BOT.id, current + 1);
+                
+                const itemEl = document.querySelector('.contact-item.system-item');
+                if (itemEl) {
+                    const badge = itemEl.querySelector('.unread-badge');
+                    if(badge) {
+                        badge.textContent = (current + 1);
+                        badge.classList.add('show');
+                    }
+                }
                 Notifications.show(`收到系统通知`, 'info');
-                loadContacts();
             }
         })
         .subscribe();
