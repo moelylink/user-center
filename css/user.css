@@ -686,3 +686,113 @@ body {
 
 /* 调整联系人项布局，防止挤压 */
 .contact-item { padding-right: 12px; }
+
+/* =========================================
+   番剧收藏 (文章列表) 样式
+   ========================================= */
+
+.article-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.article-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px var(--shadow-color);
+}
+
+.article-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    border-color: var(--primary-color);
+}
+
+/* 左侧：文章标题链接 */
+.article-link {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-color);
+    text-decoration: none;
+    margin-right: 20px;
+    
+    /* 文本过长省略 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex; align-items: center; gap: 8px;
+}
+
+.article-link:hover {
+    color: var(--primary-color);
+}
+
+.article-icon {
+    color: var(--primary-color);
+    font-size: 20px;
+    opacity: 0.8;
+}
+
+/* 右侧：元数据和操作 */
+.article-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0; /* 防止被挤压 */
+}
+
+.article-date {
+    font-size: 14px;
+    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 4px;
+}
+
+/* 删除按钮（圆形小按钮） */
+.btn-icon-danger {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #ff4d4f;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-icon-danger:hover {
+    background: #fff1f0;
+    border-color: #ffccc7;
+}
+[data-theme="dark"] .btn-icon-danger:hover {
+    background: rgba(255, 77, 79, 0.1);
+    border-color: rgba(255, 77, 79, 0.3);
+}
+
+/* 响应式：手机端 */
+@media (max-width: 600px) {
+    .article-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .article-link {
+        width: 100%;
+        font-size: 15px;
+    }
+    
+    .article-meta {
+        width: 100%;
+        justify-content: space-between;
+        border-top: 1px solid var(--border-color);
+        padding-top: 10px;
+    }
+}

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. 检查 Session
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/login';
+        window.location.href = '/login/';
         return;
     }
 
@@ -129,14 +129,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             Notifications.show('验证邮件已发送至新邮箱，请查收确认', 'success');
             emailForm.reset();
         }
-    });
-
-    // =========================================
-    // 退出登录
-    // =========================================
-    document.getElementById('btn-logout').addEventListener('click', async () => {
-        await client.auth.signOut();
-        window.location.href = '/login';
     });
 });
 

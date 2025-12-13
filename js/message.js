@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. 验证登录
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/login';
+        window.location.href = '/login/';
         return;
     }
     const myId = session.user.id;
@@ -201,14 +201,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const activeEl = document.querySelector(`.contact-item[data-uid="${userProfile.id}"]`);
         if (activeEl) {
             activeEl.classList.add('active');
-            // >>> 清除该用户的红点 <<<
             const badge = activeEl.querySelector('.unread-badge');
             if (badge) badge.classList.remove('show');
         }
-
-        // >>> 更新数据状态：该用户未读归零 <<<
-        unreadCounts.set(userProfile.id, 0);
-        updateGlobalBadge();
 
         chatEmpty.classList.add('hidden');
         chatContent.classList.remove('hidden');
@@ -218,86 +213,55 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('current-chat-name').textContent = userProfile.isSystem ? rawName : rawName.split('@')[0];
         messagesArea.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
 
+        // ----------------------------------------------------
+        // 分支 A: 系统通知
+        // ----------------------------------------------------
         if (userProfile.isSystem) {
             chatPane.classList.add('read-only');
             try {
-                const { data: notifs, error } = await client
+                const { data: notifs } = await client
                     .from('notifications')
                     .select('*')
                     .eq('user_id', myId)
                     .order('created_at', { ascending: true });
-                if (error) throw error;
-                renderSystemMessages(notifs);
+
+                renderSystemMessages(notifs || []);
+                
+                // 标记已读
                 await client.from('notifications').update({ is_read: true }).eq('user_id', myId).eq('is_read', false);
+                
+                // >>> 通知 common.js 更新全局红点 <<<
+                if (window.UnreadBadge) window.UnreadBadge.check();
+
             } catch (err) { console.error(err); }
-        } else {
+        } 
+        // ----------------------------------------------------
+        // 分支 B: 私信
+        // ----------------------------------------------------
+        else {
             chatPane.classList.remove('read-only');
             sendBtn.disabled = false;
             try {
-                const { data: messages, error } = await client
+                const { data: messages } = await client
                     .from('private_messages')
                     .select('*')
                     .or(`and(sender_id.eq.${myId},receiver_id.eq.${userProfile.id}),and(sender_id.eq.${userProfile.id},receiver_id.eq.${myId})`)
                     .order('created_at', { ascending: true });
-                if (error) throw error;
-                renderPrivateMessages(messages);
+
+                renderPrivateMessages(messages || []);
+
+                // 标记已读
                 await client.from('private_messages')
                     .update({ is_read: true })
                     .eq('receiver_id', myId)
                     .eq('sender_id', userProfile.id)
                     .eq('is_read', false);
+
+                // >>> 通知 common.js 更新全局红点 <<<
+                if (window.UnreadBadge) window.UnreadBadge.check();
+
             } catch (err) { console.error(err); }
         }
-    }
-
-    function renderSystemMessages(notifications) {
-        messagesArea.innerHTML = '';
-        if (notifications.length === 0) {
-            messagesArea.innerHTML = '<p style="text-align:center;color:#ccc;margin-top:20px">暂无系统通知</p>'; return;
-        }
-        notifications.forEach(note => {
-            const div = document.createElement('div');
-            div.className = 'message-bubble system-msg';
-            let html = '';
-            if (note.title) html += `<div class="system-msg-title">${escapeHtml(note.title)}</div>`;
-            html += escapeHtml(note.content);
-            html += `<div class="message-time">${new Date(note.created_at).toLocaleString()}</div>`;
-            div.innerHTML = html;
-            messagesArea.appendChild(div);
-        });
-        scrollToBottom();
-    }
-
-    function renderPrivateMessages(messages) {
-        messagesArea.innerHTML = '';
-        if (messages.length === 0) {
-            messagesArea.innerHTML = '<p style="text-align:center;color:#ccc;margin-top:20px">暂无消息，打个招呼吧！</p>'; return;
-        }
-        messages.forEach(msg => appendMessageUI(msg));
-        scrollToBottom();
-    }
-
-    function appendMessageUI(msg) {
-        const isMine = msg.sender_id === myId;
-        const div = document.createElement('div');
-        div.className = `message-bubble ${isMine ? 'sent' : 'received'}`;
-        div.innerHTML = `
-            ${escapeHtml(msg.content)}
-            <div class="message-time">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-        `;
-        messagesArea.appendChild(div);
-        scrollToBottom();
-    }
-
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    function scrollToBottom() {
-        messagesArea.scrollTop = messagesArea.scrollHeight;
     }
 
     // ============================================================

@@ -35,14 +35,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (stepName === 'email') {
             elements.title.textContent = '登录';
-            elements.subtitle.textContent = '使用您的 Moely 账号';
+            elements.subtitle.textContent = '使用您的 萌哩 账号';
         } else if (stepName === 'password') {
             elements.title.textContent = '欢迎回来';
             elements.subtitle.textContent = '请输入密码以继续';
             elements.displayEmail.textContent = currentEmail; 
         } else if (stepName === 'register') {
             elements.title.textContent = '创建账号';
-            elements.subtitle.textContent = '注册一个新的 Moely ID';
+            elements.subtitle.textContent = '注册一个新的 萌哩 账号';
             
             // 邮箱同步逻辑
             if (currentEmail) {
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!/^\S+@\S+\.\S+$/.test(emailVal)) return Notifications.show('邮箱格式不正确', 'warning');
         currentEmail = emailVal;
 
-        if (pwd.length < 8) return Notifications.show('密码长度需大于8位', 'warning');
+        if (pwd.length < 8) return Notifications.show('密码长度大于8位', 'warning');
         if (pwd !== pwdR) return Notifications.show('两次密码输入不一致', 'warning');
 
         try {

@@ -4,10 +4,6 @@
 const supabaseUrl = 'https://fefckqwvcvuadiixvhns.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZmNrcXd2Y3Z1YWRpaXh2aG5zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzYzNDE5OTUsImV4cCI6MjA1MTkxNzk5NX0.-OUllwH7v2K-j4uIx7QQaV654R5Gz5_1jP4BGdkWWfg';
 
-/**
- * 自定义存储适配器：将 Session 存入 Cookie 并设置根域名 (.moely.link)
- * 这样所有子域名 (user.moely.link, www.moely.link, anime.moely.link) 均可共享登录状态
- */
 const rootDomainStorage = {
     getItem: (key) => {
         const name = key + "=";
@@ -15,35 +11,25 @@ const rootDomainStorage = {
         const ca = decodedCookie.split(';');
         for(let i = 0; i < ca.length; i++) {
             let c = ca[i];
-            while (c.charAt(0) === ' ') {
-                c = c.substring(1);
-            }
-            if (c.indexOf(name) === 0) {
-                return c.substring(name.length, c.length);
-            }
+            while (c.charAt(0) === ' ') c = c.substring(1);
+            if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
         }
         return null;
     },
     setItem: (key, value) => {
-        // 设置 Cookie 有效期 (例如 100 年，保持登录状态)
         const d = new Date();
         d.setTime(d.getTime() + (365*24*60*60*1000));
         const expires = "expires="+ d.toUTCString();
-        // 关键：设置 domain 为 .moely.link (注意前面的点)
-        // 这样所有子域名都能访问这个 Cookie
-        // 同时也设置 path=/ 确保全站有效
         document.cookie = `${key}=${value};${expires};domain=.moely.link;path=/;SameSite=Lax;Secure`;
     },
     removeItem: (key) => {
-        // 删除 Cookie (设置过期时间为过去)
         document.cookie = `${key}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;domain=.moely.link;path=/;`;
     }
 };
 
-// 初始化 Client，传入自定义 auth.storage
 const client = supabase.createClient(supabaseUrl, supabaseKey, {
     auth: {
-        storage: rootDomainStorage, // 使用我们定义的 Cookie 存储
+        storage: rootDomainStorage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true
@@ -51,7 +37,105 @@ const client = supabase.createClient(supabaseUrl, supabaseKey, {
 });
 
 // ----------------------------------------------------------------
-// 通知系统
+// 全局未读消息管理器 (新增模块)
+// ----------------------------------------------------------------
+const UnreadBadge = {
+    userId: null,
+    
+    async init() {
+        // 获取当前用户
+        const { data: { session } } = await client.auth.getSession();
+        if (!session) return;
+        this.userId = session.user.id;
+
+        // 初次检查
+        this.check();
+
+        // 开启全局实时监听
+        this.subscribe();
+    },
+
+    async check() {
+        if (!this.userId) return;
+
+        try {
+            // 1. 查询系统通知未读数
+            const { count: sysCount } = await client
+                .from('notifications')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', this.userId)
+                .eq('is_read', false);
+
+            // 2. 查询私信未读数
+            const { count: msgCount } = await client
+                .from('private_messages')
+                .select('id', { count: 'exact', head: true })
+                .eq('receiver_id', this.userId)
+                .eq('is_read', false);
+
+            const total = (sysCount || 0) + (msgCount || 0);
+            this.updateUI(total);
+
+        } catch (err) {
+            console.error('Check unread failed:', err);
+        }
+    },
+
+    updateUI(count) {
+        const dot = document.getElementById('sidebar-unread-dot');
+        if (!dot) return;
+
+        if (count > 0) {
+            dot.classList.add('show');
+        } else {
+            dot.classList.remove('show');
+        }
+    },
+
+    subscribe() {
+        if (!this.userId) return;
+
+        // 监听所有针对我的新插入消息
+        const channel = client.channel('global_badge_listener')
+            // 监听新私信
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'private_messages', 
+                filter: `receiver_id=eq.${this.userId}` 
+            }, () => {
+                this.updateUI(1); // 只要有新的，肯定显示红点，不用重新查库
+                Notifications.show('收到新私信', 'info');
+            })
+            // 监听新系统通知
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'notifications', 
+                filter: `user_id=eq.${this.userId}` 
+            }, () => {
+                this.updateUI(1);
+                Notifications.show('收到系统通知', 'info');
+            })
+            // 监听消息状态变为“已读” (UPDATE) -> 重新计算总数
+            .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'private_messages', 
+                filter: `receiver_id=eq.${this.userId}` 
+            }, () => this.check())
+            .on('postgres_changes', { 
+                event: 'UPDATE', 
+                schema: 'public', 
+                table: 'notifications', 
+                filter: `user_id=eq.${this.userId}` 
+            }, () => this.check())
+            .subscribe();
+    }
+};
+
+// ----------------------------------------------------------------
+// 通知系统 (Toast)
 // ----------------------------------------------------------------
 const Notifications = {
     list: new Set(),
@@ -99,19 +183,27 @@ const Notifications = {
 };
 
 // ----------------------------------------------------------------
-// 布局与主题 (Layout & Theme)
+// 布局与主题
 // ----------------------------------------------------------------
 const AppLayout = {
     init() {
+        // 清理旧 localStorage
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                localStorage.removeItem(key);
+            }
+        });
+
         this.initTheme();
         this.initSidebar();
+        
+        // >>> 启动全局未读检测 <<<
+        UnreadBadge.init();
     },
 
     initTheme() {
         const toggleBtn = document.getElementById('theme-toggle');
-        // 某些页面可能没有 theme toggle 按钮，做个判断
         if (!toggleBtn) return;
-
         const icon = toggleBtn.querySelector('.material-icons-round');
         
         const savedTheme = localStorage.getItem('theme');
@@ -161,3 +253,6 @@ const AppLayout = {
 document.addEventListener('DOMContentLoaded', () => {
     AppLayout.init();
 });
+
+// 将 UnreadBadge 暴露给全局，以便 message.js 在阅读后手动调用刷新
+window.UnreadBadge = UnreadBadge;
