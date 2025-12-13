@@ -107,6 +107,42 @@
                     <button class="btn-primary" id="btn-register">注册</button>
                 </div>
             </div>
+
+            <div id="step-forgot" class="auth-step">
+                <div class="auth-header-sm">
+                    <h3>找回密码</h3>
+                    <p class="text-secondary">输入注册邮箱，我们将发送重置链接。</p>
+                </div>
+
+                <div class="input-group">
+                    <input type="email" id="forgot-email" required placeholder=" ">
+                    <label for="forgot-email">电子邮箱</label>
+                </div>
+                
+                <div class="actions-right mt-4">
+                    <button class="btn-text" id="btn-cancel-forgot">返回登录</button>
+                    <button class="btn-primary" id="btn-send-reset-link">发送验证邮件</button>
+                </div>
+            </div>
+
+            <div id="step-update-password" class="auth-step">
+                <div class="auth-header-sm">
+                    <h3>设置新密码</h3>
+                    <p class="text-secondary">验证成功！请设置您的新密码。</p>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="new-password" required placeholder=" ">
+                    <label for="new-password">新密码</label>
+                </div>
+                <div class="input-group">
+                    <input type="password" id="new-password-confirm" required placeholder=" ">
+                    <label for="new-password-confirm">确认新密码</label>
+                </div>
+                <div style="margin-top: 0; margin-bottom: 20px; font-size: 12px;">*密码需不少于8位，且包含大小写字母和特殊字符</div>                
+                <div class="actions-right mt-4">
+                    <button class="btn-primary" id="btn-save-new-password">保存密码</button>
+                </div>
+            </div>
         </div>
     </div>
     

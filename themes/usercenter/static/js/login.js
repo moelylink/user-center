@@ -1,4 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // 依赖 common.js
+    if (typeof client === 'undefined') return;
+
     // 状态变量
     let currentEmail = '';
     const SITE_KEY = '8f124646-ac04-496c-85b6-6396e8b8da3c'; 
@@ -7,50 +10,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const steps = {
         email: document.getElementById('step-email'),
         password: document.getElementById('step-password'),
-        register: document.getElementById('step-register')
+        register: document.getElementById('step-register'),
+        forgot: document.getElementById('step-forgot'), // 请求邮件页
+        update: document.getElementById('step-update-password') // 设置新密码页
     };
     
     const elements = {
-        inputEmail: document.getElementById('input-email'),   // 登录第一步
-        regEmail: document.getElementById('reg-email'),       // 注册页 (新)
+        inputEmail: document.getElementById('input-email'),
+        regEmail: document.getElementById('reg-email'),
+        forgotEmail: document.getElementById('forgot-email'),
         displayEmail: document.getElementById('display-email'),
         title: document.getElementById('auth-title'),
-        subtitle: document.getElementById('auth-subtitle')
+        subtitle: document.getElementById('auth-subtitle'),
+        // 新密码输入框
+        newPwd: document.getElementById('new-password'),
+        newPwdConfirm: document.getElementById('new-password-confirm')
     };
 
     // 获取重定向 URL
     function getRedirectUrl() {
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
-        if (redirect && (redirect.startsWith('/') || redirect.startsWith(window.location.origin))) {
-            return redirect;
+        if (redirect) {
+            if(redirect.includes('moely.link')) return redirect;
+            if(redirect.startsWith('/')) return "https://user.moely.link" + redirect;
         }
-        return '/'; 
+        return 'https://user.moely.link/'; 
     }
 
-    // 切换步骤
+    // 切换步骤 UI
     function switchStep(stepName) {
-        Object.values(steps).forEach(el => el.classList.remove('active'));
-        steps[stepName].classList.add('active');
+        Object.values(steps).forEach(el => { if(el) el.classList.remove('active'); });
+        if(steps[stepName]) steps[stepName].classList.add('active');
 
+        // 动态更新标题
         if (stepName === 'email') {
             elements.title.textContent = '登录';
-            elements.subtitle.textContent = '使用您的 萌哩 账号';
+            elements.subtitle.textContent = '使用您的 Moely 账号';
         } else if (stepName === 'password') {
             elements.title.textContent = '欢迎回来';
             elements.subtitle.textContent = '请输入密码以继续';
-            elements.displayEmail.textContent = currentEmail; 
-        } else if (stepName === 'register') {
-            elements.title.textContent = '创建账号';
-            elements.subtitle.textContent = '注册一个新的 萌哩 账号';
-            
-            // 邮箱同步逻辑
-            if (currentEmail) {
-                elements.regEmail.value = currentEmail;
-                // 暂时添加 style 触发 focus 效果，或者依赖 css :not(:placeholder-shown)
-            } else {
-                elements.regEmail.value = '';
-            }
+            if(elements.displayEmail) elements.displayEmail.textContent = currentEmail; 
+        } else if (stepName === 'forgot') {
+            elements.title.textContent = '重置密码';
+            elements.subtitle.textContent = '通过邮箱找回账号';
+        } else if (stepName === 'update') {
+            elements.title.textContent = '重置密码';
+            elements.subtitle.textContent = '请输入新的安全密码';
         }
     }
 
@@ -96,43 +102,52 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- 事件监听 ---
+    // ============================================================
+    // 监听 Auth 状态 (核心：处理重置密码回调)
+    // ============================================================
+    client.auth.onAuthStateChange(async (event, session) => {
+        // 当用户点击邮件链接跳转回来时，事件为 PASSWORD_RECOVERY
+        if (event === 'PASSWORD_RECOVERY') {
+            switchStep('update'); // 直接显示设置新密码的界面
+            Notifications.show('验证成功，请设置新密码', 'info');
+        } 
+        else if (event === 'SIGNED_IN') {
+            // 普通登录成功，延迟跳转（防止覆盖 RECOVERY 事件）
+            setTimeout(() => {
+                // 如果 URL 里包含 type=recovery，说明是重置流程，不要跳走
+                const isRecovery = window.location.hash.includes('type=recovery');
+                if (!isRecovery) {
+                    window.location.href = getRedirectUrl();
+                }
+            }, 500);
+        }
+    });
 
-    // 1. 下一步 (去输入密码)
-    document.getElementById('btn-next').addEventListener('click', async () => {
+    // ============================================================
+    // 常规登录/注册逻辑
+    // ============================================================
+
+    // 1. 输入邮箱 -> 下一步
+    document.getElementById('btn-next').addEventListener('click', () => {
         const email = elements.inputEmail.value.trim();
         if (!email) return Notifications.show('请输入邮箱', 'warning');
         if (!/^\S+@\S+\.\S+$/.test(email)) return Notifications.show('邮箱格式不正确', 'warning');
-        
         currentEmail = email;
         switchStep('password');
     });
 
     // 2. 去注册
     document.getElementById('btn-to-register').addEventListener('click', () => {
-        const email = elements.inputEmail.value.trim();
-        if (email) currentEmail = email;
+        if(elements.inputEmail.value) currentEmail = elements.inputEmail.value;
         switchStep('register');
     });
 
     // 3. 返回修改邮箱
     document.getElementById('btn-back-email').addEventListener('click', () => switchStep('email'));
-    document.getElementById('user-chip').addEventListener('click', () => switchStep('email'));
+    const userChip = document.getElementById('user-chip');
+    if(userChip) userChip.addEventListener('click', () => switchStep('email'));
 
-    // 4. 从注册页返回登录
-    document.getElementById('btn-back-login').addEventListener('click', () => {
-        const regEmailVal = elements.regEmail.value.trim();
-        if (regEmailVal) currentEmail = regEmailVal;
-
-        if (currentEmail) {
-            elements.inputEmail.value = currentEmail;
-            switchStep('password');
-        } else {
-            switchStep('email');
-        }
-    });
-
-    // 5. 登录
+    // 4. 登录
     document.getElementById('btn-login').addEventListener('click', async () => {
         const password = document.getElementById('input-password').value;
         if (!password) return Notifications.show('请输入密码', 'warning');
@@ -145,103 +160,109 @@ document.addEventListener('DOMContentLoaded', () => {
                 options: { captchaToken: token }
             });
             if (error) throw error;
-            Notifications.show('登录成功！', 'success');
-            setTimeout(() => window.location.href = getRedirectUrl(), 1500);
+            Notifications.show('登录成功', 'success');
         } catch (err) {
             if (err !== 'Captcha closed') Notifications.show(err.message || '登录失败', 'error');
         }
     });
 
-    // 6. OTP 登录
-    document.getElementById('btn-otp-login').addEventListener('click', async () => {
-        try {
-            const token = await executeCaptcha();
-            const { error } = await client.auth.signInWithOtp({
-                email: currentEmail,
-                options: { 
-                    captchaToken: token, 
-                    emailRedirectTo: window.location.origin + '/?redirect=' + encodeURIComponent(getRedirectUrl())
-                }
-            });
-            if (error) throw error;
-            Notifications.show('登录链接已发送至您的邮箱', 'success');
-        } catch (err) {
-            if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
-        }
-    });
-
-    // 7. 注册
+    // 5. 注册
     document.getElementById('btn-register').addEventListener('click', async () => {
-        const emailVal = elements.regEmail.value.trim();
+        const email = elements.regEmail.value.trim();
         const pwd = document.getElementById('reg-password').value;
         const pwdR = document.getElementById('reg-password-repeat').value;
 
-        if (!emailVal) return Notifications.show('请输入电子邮箱', 'warning');
-        if (!/^\S+@\S+\.\S+$/.test(emailVal)) return Notifications.show('邮箱格式不正确', 'warning');
-        currentEmail = emailVal;
-
-        if (pwd.length < 8) return Notifications.show('密码长度大于8位', 'warning');
+        if (!email) return Notifications.show('请输入电子邮箱', 'warning');
+        if (pwd.length < 8) return Notifications.show('密码长度需大于8位', 'warning');
         if (pwd !== pwdR) return Notifications.show('两次密码输入不一致', 'warning');
 
         try {
             const token = await executeCaptcha();
             const { error } = await client.auth.signUp({
-                email: currentEmail,
+                email: email,
                 password: pwd,
                 options: { 
                     captchaToken: token,
-                    emailRedirectTo: window.location.origin + '/?redirect=' + encodeURIComponent(getRedirectUrl())
+                    emailRedirectTo: getRedirectUrl()
                 }
             });
             if (error) throw error;
             Notifications.show('注册成功！请查收验证邮件', 'success');
-            setTimeout(() => {
-                elements.inputEmail.value = currentEmail;
-                switchStep('email');
-            }, 3000);
+            setTimeout(() => { elements.inputEmail.value = email; switchStep('email'); }, 3000);
         } catch (err) {
             if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
         }
     });
 
-    // 8. 忘记密码
-    document.getElementById('btn-forgot-pwd').addEventListener('click', async () => {
-        if (!currentEmail) return Notifications.show('邮箱丢失，请返回上一步', 'error');
+    // ============================================================
+    // 重置密码逻辑 (标准流程)
+    // ============================================================
+
+    // A. 点击"忘记密码" -> 进入邮箱输入页
+    document.getElementById('btn-forgot-pwd').addEventListener('click', () => {
+        if (currentEmail) elements.forgotEmail.value = currentEmail;
+        switchStep('forgot');
+    });
+
+    // B. 返回登录
+    document.getElementById('btn-cancel-forgot').addEventListener('click', () => switchStep('email'));
+
+    // C. 发送重置邮件
+    document.getElementById('btn-send-reset-link').addEventListener('click', async () => {
+        const email = elements.forgotEmail.value.trim();
+        if (!email) return Notifications.show('请输入注册邮箱', 'warning');
+
         try {
             const token = await executeCaptcha();
-            const { error } = await client.auth.resetPasswordForEmail(currentEmail, {
+            const { error } = await client.auth.resetPasswordForEmail(email, {
                 captchaToken: token,
-                redirectTo: window.location.origin + '/reset-password'
+                redirectTo: getRedirectUrl()
             });
             if (error) throw error;
-            Notifications.show('重置密码邮件已发送', 'success');
+            Notifications.show('重置邮件已发送，请查收', 'success');
+            // 可以选择跳回登录页，或者停留在当前页提示
+            setTimeout(() => switchStep('email'), 2000);
         } catch (err) {
             if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
         }
     });
 
-    // 9. 第三方登录
+    // D. 提交新密码 (用户从邮件回来后)
+    document.getElementById('btn-save-new-password').addEventListener('click', async () => {
+        const newPwd = elements.newPwd.value;
+        const confirmPwd = elements.newPwdConfirm.value;
+
+        if (newPwd.length < 8) return Notifications.show('新密码长度需大于8位', 'warning');
+        if (newPwd !== confirmPwd) return Notifications.show('两次密码输入不一致', 'warning');
+
+        try {
+            Notifications.show('正在更新密码...', 'info');
+            // 调用 updateUser 修改密码
+            const { error } = await client.auth.updateUser({ password: newPwd });
+            
+            if (error) throw error;
+            
+            Notifications.show('密码修改成功！正在跳转...', 'success');
+            setTimeout(() => {
+                window.location.href = getRedirectUrl();
+            }, 1500);
+
+        } catch (err) {
+            Notifications.show('修改失败: ' + err.message, 'error');
+        }
+    });
+
+    // 第三方登录 & Passkey (保持不变)
     document.querySelectorAll('.social-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const provider = e.currentTarget.getAttribute('data-provider');
             try {
                 const token = await executeCaptcha();
-                const { error } = await client.auth.signInWithOAuth({
+                await client.auth.signInWithOAuth({
                     provider: provider,
-                    options: {
-                        captchaToken: token,
-                        redirectTo: window.location.origin + '/?redirect=' + encodeURIComponent(getRedirectUrl())
-                    }
+                    options: { captchaToken: token, redirectTo: getRedirectUrl() }
                 });
-                if (error) throw error;
-            } catch (err) {
-                if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
-            }
+            } catch (err) { if (err !== 'Captcha closed') Notifications.show(err.message, 'error'); }
         });
-    });
-
-    // 10. 检查 Session
-    client.auth.getSession().then(({ data: { session } }) => {
-        if (session) window.location.href = getRedirectUrl();
     });
 });
