@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. 验证登录
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/login/';
+        window.location.href = '/login/?redirect=/message/';
         return;
     }
     const myId = session.user.id;

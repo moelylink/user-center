@@ -602,7 +602,7 @@ body {
     .chat-container.active-chat .contact-pane { display: none; }
     .chat-container.active-chat .chat-pane { display: flex; }
     
-    .chat-wrapper { padding: 0; margin-left: 0; width: 100%; }
+    .chat-wrapper { padding: 0; margin-left: 0; width: 100%; padding-top: var(--navbar-height); box-sizing: border-box; }
 }
 
 /* 特殊联系人：系统通知 */

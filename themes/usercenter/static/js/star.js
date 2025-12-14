@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/login/';
+        window.location.href = '/login/?redirect=/star/';
         return;
     }
     const userId = session.user.id;

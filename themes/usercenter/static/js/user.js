@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. 检查 Session
     const { data: { session }, error } = await client.auth.getSession();
     if (error || !session) {
-        window.location.href = '/login/';
+        window.location.href = '/login/?redirect=/';
         return;
     }
 

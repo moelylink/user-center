@@ -18,7 +18,7 @@
     <script type="text/javascript">
         document.getElementById('btn-logout').addEventListener('click', async () => {
             await client.auth.signOut();
-            window.location.href = '/login/';
+            window.location.href = '/login/?redirect=' + window.location.pathname;
         });
     </script>
     <div class="sidebar-overlay" id="sidebar-overlay"></div>
