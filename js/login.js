@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ============================================================
-    // 监听 Auth 状态 (修复版)
+    // 监听 Auth 状态
     // ============================================================
     client.auth.onAuthStateChange(async (event, session) => {
         // 调试日志
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // ============================================================
-    // 常规登录/注册逻辑 (保持不变)
+    // 常规登录/注册逻辑
     // ============================================================
 
     // 1. 输入邮箱 -> 下一步
@@ -235,7 +235,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // 7. 注册
+    // 7. 第三方登录
+    document.querySelectorAll('.social-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const provider = e.currentTarget.getAttribute('data-provider');
+            try {
+                const token = await executeCaptcha();
+                await client.auth.signInWithOAuth({
+                    provider: provider,
+                    options: { captchaToken: token, redirectTo: getRedirectUrl() }
+                });
+            } catch (err) { if (err !== 'Captcha closed') Notifications.show(err.message, 'error'); }
+        });
+    });
+
+    // 8. 注册
     document.getElementById('btn-register').addEventListener('click', async () => {
         const email = elements.regEmail.value.trim();
         const pwd = document.getElementById('reg-password').value;
@@ -320,19 +334,5 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (err) {
             Notifications.show('修改失败: ' + err.message, 'error');
         }
-    });
-
-    // 8. 第三方登录 & Passkey
-    document.querySelectorAll('.social-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const provider = e.currentTarget.getAttribute('data-provider');
-            try {
-                const token = await executeCaptcha();
-                await client.auth.signInWithOAuth({
-                    provider: provider,
-                    options: { captchaToken: token, redirectTo: getRedirectUrl() }
-                });
-            } catch (err) { if (err !== 'Captcha closed') Notifications.show(err.message, 'error'); }
-        });
     });
 });
