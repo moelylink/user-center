@@ -1,5 +1,3 @@
-// js/user.js
-
 document.addEventListener('DOMContentLoaded', async () => {
     // 依赖 common.js 中的 client (Supabase实例) 和 Notifications
     if (typeof client === 'undefined') {
