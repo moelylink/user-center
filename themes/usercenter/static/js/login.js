@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 状态变量
     let currentEmail = '';
-    const SITE_KEY = '8f124646-ac04-496c-85b6-6396e8b8da3c'; 
 
     // DOM 元素引用
     const steps = {
@@ -83,47 +82,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // 人机验证
-    function executeCaptcha() {
-        return new Promise((resolve, reject) => {
-            const overlay = document.createElement('div');
-            overlay.className = 'captcha-overlay';
-            const box = document.createElement('div');
-            box.className = 'captcha-box';
-            const captchaDiv = document.createElement('div');
-            const uniqueId = 'h-captcha-' + Date.now();
-            captchaDiv.id = uniqueId;
-            box.appendChild(captchaDiv);
-            overlay.appendChild(box);
-            document.body.appendChild(overlay);
-            requestAnimationFrame(() => overlay.classList.add('active'));
-
-            if (!window.hcaptcha) {
-                Notifications.show('验证组件加载失败', 'error');
-                overlay.remove(); reject('Captcha fail'); return;
-            }
-
-            try {
-                window.hcaptcha.render(uniqueId, {
-                    sitekey: SITE_KEY,
-                    callback: (token) => {
-                        overlay.classList.remove('active');
-                        setTimeout(() => overlay.remove(), 300);
-                        resolve(token);
-                    },
-                    'error-callback': () => {
-                        Notifications.show('验证失败', 'error');
-                        overlay.remove(); reject('Captcha error');
-                    },
-                    'close-callback': () => {
-                        overlay.remove(); reject('Captcha closed');
-                    }
-                });
-            } catch (e) {
-                overlay.remove(); reject(e);
-            }
-        });
-    }
 
     // ============================================================
     // 监听 Auth 状态
