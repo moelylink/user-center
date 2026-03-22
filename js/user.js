@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 依赖 common.js 中的 client (Supabase实例) 和 Notifications
     if (typeof client === 'undefined') {
@@ -54,15 +55,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 绑定事件
                 btn.onclick = async () => {
                     try {
+                        const token = await executeCaptcha();
                         const { data, error } = await client.auth.signInWithOAuth({
                             provider: provider,
                             options: {
+                                captchaToken: token,
                                 redirectTo: window.location.href // 绑定后跳回当前设置页
                             }
                         });
                         if (error) throw error;
                     } catch (err) {
-                        Notifications.show('绑定启动失败: ' + err.message, 'error');
+                        if (err !== 'Captcha closed') Notifications.show('绑定启动失败: ' + err.message, 'error');
                     }
                 };
             }
@@ -86,11 +89,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 为了安全性，建议先验证旧密码
         // 注意：Supabase 没有直接的 "Verify Password" API，
         // 我们通过尝试用旧密码 SignIn 来模拟验证。
+        // 由于 Supabase 开启了人机验证，必须先获取 captcha token。
+        Notifications.show('请完成人机验证...', 'info');
+        
+        let captchaToken;
+        try {
+            captchaToken = await executeCaptcha();
+        } catch (err) {
+            if (err !== 'Captcha closed') Notifications.show('人机验证失败，请重试', 'error');
+            return;
+        }
+
         Notifications.show('正在验证原密码...', 'info');
         
         const { error: verifyError } = await client.auth.signInWithPassword({
             email: user.email,
-            password: oldPwd
+            password: oldPwd,
+            options: { captchaToken: captchaToken }
         });
 
         if (verifyError) {

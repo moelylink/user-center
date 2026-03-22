@@ -9,7 +9,7 @@ const rootDomainStorage = {
         const name = key + "=";
         const decodedCookie = decodeURIComponent(document.cookie);
         const ca = decodedCookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
+        for (let i = 0; i < ca.length; i++) {
             let c = ca[i];
             while (c.charAt(0) === ' ') c = c.substring(1);
             if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
@@ -18,8 +18,8 @@ const rootDomainStorage = {
     },
     setItem: (key, value) => {
         const d = new Date();
-        d.setTime(d.getTime() + (365*24*60*60*1000));
-        const expires = "expires="+ d.toUTCString();
+        d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
+        const expires = "expires=" + d.toUTCString();
         document.cookie = `${key}=${value};${expires};domain=.moely.link;path=/;SameSite=Lax;Secure`;
     },
     removeItem: (key) => {
@@ -41,7 +41,7 @@ const client = supabase.createClient(supabaseUrl, supabaseKey, {
 // ----------------------------------------------------------------
 const UnreadBadge = {
     userId: null,
-    
+
     async init() {
         // 获取当前用户
         const { data: { session } } = await client.auth.getSession();
@@ -98,37 +98,37 @@ const UnreadBadge = {
         // 监听所有针对我的新插入消息
         const channel = client.channel('global_badge_listener')
             // 监听新私信
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'private_messages', 
-                filter: `receiver_id=eq.${this.userId}` 
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'private_messages',
+                filter: `receiver_id=eq.${this.userId}`
             }, () => {
                 this.updateUI(1); // 只要有新的，肯定显示红点，不用重新查库
                 Notifications.show('收到新私信', 'info');
             })
             // 监听新系统通知
-            .on('postgres_changes', { 
-                event: 'INSERT', 
-                schema: 'public', 
-                table: 'notifications', 
-                filter: `user_id=eq.${this.userId}` 
+            .on('postgres_changes', {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'notifications',
+                filter: `user_id=eq.${this.userId}`
             }, () => {
                 this.updateUI(1);
                 Notifications.show('收到系统通知', 'info');
             })
             // 监听消息状态变为“已读” (UPDATE) -> 重新计算总数
-            .on('postgres_changes', { 
-                event: 'UPDATE', 
-                schema: 'public', 
-                table: 'private_messages', 
-                filter: `receiver_id=eq.${this.userId}` 
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'private_messages',
+                filter: `receiver_id=eq.${this.userId}`
             }, () => this.check())
-            .on('postgres_changes', { 
-                event: 'UPDATE', 
-                schema: 'public', 
-                table: 'notifications', 
-                filter: `user_id=eq.${this.userId}` 
+            .on('postgres_changes', {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'notifications',
+                filter: `user_id=eq.${this.userId}`
             }, () => this.check())
             .subscribe();
     }
@@ -139,14 +139,14 @@ const UnreadBadge = {
 // ----------------------------------------------------------------
 const Notifications = {
     list: new Set(),
-    
+
     show(message, type = 'info') {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
-        
-        const icon = type === 'success' ? 'check_circle' : 
-                    type === 'error' ? 'error' : 'warning';
-        
+
+        const icon = type === 'success' ? 'check_circle' :
+            type === 'error' ? 'error' : 'warning';
+
         notification.innerHTML = `
             <div class="notification-wrapper">
                 <div class="notification-icon">
@@ -159,9 +159,9 @@ const Notifications = {
         document.body.appendChild(notification);
         this.list.add(notification);
         this.updatePosition();
-        
+
         requestAnimationFrame(() => notification.classList.add('show'));
-        
+
         setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => {
@@ -196,7 +196,7 @@ const AppLayout = {
 
         this.initTheme();
         this.initSidebar();
-        
+
         // >>> 启动全局未读检测 <<<
         UnreadBadge.init();
     },
@@ -205,13 +205,13 @@ const AppLayout = {
         const toggleBtn = document.getElementById('theme-toggle');
         if (!toggleBtn) return;
         const icon = toggleBtn.querySelector('.material-icons-round');
-        
+
         const savedTheme = localStorage.getItem('theme');
         const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        
+
         const applyTheme = (theme) => {
             document.documentElement.setAttribute('data-theme', theme);
-            if(icon) icon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
+            if (icon) icon.textContent = theme === 'dark' ? 'light_mode' : 'dark_mode';
         };
 
         if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
@@ -232,7 +232,7 @@ const AppLayout = {
         const overlay = document.getElementById('sidebar-overlay');
         const sidebar = document.getElementById('sidebar');
 
-        if(!menuBtn) return;
+        if (!menuBtn) return;
 
         const toggleMenu = (show) => {
             if (show) {
@@ -256,3 +256,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 将 UnreadBadge 暴露给全局，以便 message.js 在阅读后手动调用刷新
 window.UnreadBadge = UnreadBadge;
+
+// ----------------------------------------------------------------
+// 人机验证 (hCaptcha) - 全局共用
+// ----------------------------------------------------------------
+window.SITE_KEY = '8f124646-ac04-496c-85b6-6396e8b8da3c';
+
+window.executeCaptcha = function () {
+    return new Promise((resolve, reject) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'captcha-overlay';
+        const box = document.createElement('div');
+        box.className = 'captcha-box';
+        const captchaDiv = document.createElement('div');
+        const uniqueId = 'h-captcha-' + Date.now();
+        captchaDiv.id = uniqueId;
+        box.appendChild(captchaDiv);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('active'));
+
+        if (!window.hcaptcha) {
+            Notifications.show('验证组件加载失败', 'error');
+            overlay.remove(); reject('Captcha fail'); return;
+        }
+
+        try {
+            window.hcaptcha.render(uniqueId, {
+                sitekey: window.SITE_KEY,
+                callback: (token) => {
+                    overlay.classList.remove('active');
+                    setTimeout(() => overlay.remove(), 300);
+                    resolve(token);
+                },
+                'error-callback': () => {
+                    Notifications.show('验证失败', 'error');
+                    overlay.remove(); reject('Captcha error');
+                },
+                'close-callback': () => {
+                    overlay.remove(); reject('Captcha closed');
+                }
+            });
+        } catch (e) {
+            overlay.remove(); reject(e);
+        }
+    });
+};
