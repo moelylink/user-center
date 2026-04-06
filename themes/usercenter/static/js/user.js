@@ -14,13 +14,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     const user = session.user;
-    
+
     // =========================================
     // 2.1 渲染用户信息
     // =========================================
     document.getElementById('user-email').textContent = user.email;
     document.getElementById('user-id').textContent = user.id;
-    
+
     // 格式化日期
     const regDate = new Date(user.created_at);
     document.getElementById('user-reg-date').textContent = regDate.toLocaleDateString('zh-CN', {
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 检查是否已绑定 (注意: azure 的 provider 可能是 'azure' 也可能是 'workos' 等)
             const isLinked = providers.includes(provider);
-            
+
             if (isLinked) {
                 btn.textContent = '已绑定';
                 btn.classList.add('linked');
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.textContent = '绑定';
                 btn.classList.remove('linked');
                 btn.disabled = false;
-                
+
                 // 绑定事件
                 btn.onclick = async () => {
                     try {
@@ -86,35 +86,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (newPwd.length < 8) return Notifications.show('新密码需大于8位', 'warning');
         if (newPwd !== repeatPwd) return Notifications.show('两次新密码输入不一致', 'warning');
 
-        // 为了安全性，建议先验证旧密码
-        // 注意：Supabase 没有直接的 "Verify Password" API，
-        // 我们通过尝试用旧密码 SignIn 来模拟验证。
-        // 由于 Supabase 开启了人机验证，必须先获取 captcha token。
-        Notifications.show('请完成人机验证...', 'info');
-        
-        let captchaToken;
-        try {
-            captchaToken = await executeCaptcha();
-        } catch (err) {
-            if (err !== 'Captcha closed') Notifications.show('人机验证失败，请重试', 'error');
-            return;
-        }
+        Notifications.show('正在更新密码...', 'info');
 
-        Notifications.show('正在验证原密码...', 'info');
-        
-        const { error: verifyError } = await client.auth.signInWithPassword({
-            email: user.email,
-            password: oldPwd,
-            options: { captchaToken: captchaToken }
+        const { error: updateError } = await client.auth.updateUser({
+            password: newPwd,
+            current_password: oldPwd
         });
 
-        if (verifyError) {
-            return Notifications.show('原密码错误，请重试', 'error');
-        }
-
-        // 验证通过，更新密码
-        const { error: updateError } = await client.auth.updateUser({ password: newPwd });
-        
         if (updateError) {
             Notifications.show(updateError.message, 'error');
         } else {
