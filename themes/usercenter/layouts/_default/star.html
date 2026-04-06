@@ -28,9 +28,19 @@
             </div>
 
             <div class="pagination-container hidden" id="pagination">
-                <button class="btn-outline" id="prev-page" disabled>上一页</button>
-                <span class="page-info">第 <span id="current-page">1</span> 页</span>
-                <button class="btn-outline" id="next-page">下一页</button>
+                <button class="pagination-btn" id="prev-page" title="上一页" disabled>
+                    <span class="material-icons-round">chevron_left</span>
+                    <span>上一页</span>
+                </button>
+                <div class="page-counter">
+                    <span class="current-label">第</span>
+                    <span class="page-number" id="current-page">1</span>
+                    <span class="total-label">页</span>
+                </div>
+                <button class="pagination-btn" id="next-page" title="下一页">
+                    <span>下一页</span>
+                    <span class="material-icons-round">chevron_right</span>
+                </button>
             </div>
         </div>
     </main>

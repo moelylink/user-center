@@ -35,8 +35,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         const providers = identities.map(id => id.provider);
 
         ['google', 'github', 'azure'].forEach(provider => {
-            // Azure 在 Supabase 中通常对应 provider 名 'azure' 或 'microsoft'
-            // 视具体配置而定，这里假设 HTML 中 data-provider="azure"
             const btn = document.querySelector(`.bind-btn[data-provider="${provider}"]`);
             if (!btn) return;
 
