@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 一旦捕获到，将此状态“锁死”在变量中，后续无论 Hash 是否消失，都以此为准
     const hash = window.location.hash;
     const isRecoveryFlow = hash && hash.includes('type=recovery');
-    
+
     if (isRecoveryFlow) {
         console.log("🔒 检测到重置密码流程，已锁定跳转逻辑。");
     }
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         forgot: document.getElementById('step-forgot'), // 请求邮件页
         update: document.getElementById('step-update-password') // 设置新密码页
     };
-    
+
     const elements = {
         inputEmail: document.getElementById('input-email'),
         regEmail: document.getElementById('reg-email'),
@@ -43,16 +43,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
         if (redirect) {
-            if(redirect.includes('moely.link')) return "https://user.moely.link/callback/?redirect=" + redirect;
-            if(redirect.startsWith('/')) return "https://user.moely.link" + redirect;
+            if (redirect.includes('moely.link')) return "https://user.moely.link/callback/?redirect=" + redirect;
+            if (redirect.startsWith('/')) return "https://user.moely.link" + redirect;
         }
-        return 'https://user.moely.link/'; 
+        return 'https://user.moely.link/';
     }
 
     // 切换步骤 UI
     function switchStep(stepName) {
-        Object.values(steps).forEach(el => { if(el) el.classList.remove('active'); });
-        if(steps[stepName]) steps[stepName].classList.add('active');
+        Object.values(steps).forEach(el => { if (el) el.classList.remove('active'); });
+        if (steps[stepName]) steps[stepName].classList.add('active');
 
         // 动态更新标题
         if (stepName === 'email') {
@@ -61,11 +61,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (stepName === 'password') {
             elements.title.textContent = '欢迎回来';
             elements.subtitle.textContent = '请输入密码以继续';
-            if(elements.displayEmail) elements.displayEmail.textContent = currentEmail;
+            if (elements.displayEmail) elements.displayEmail.textContent = currentEmail;
         } else if (stepName === 'register') {
             elements.title.textContent = '创建账号';
             elements.subtitle.textContent = '注册一个新的 萌哩 账号';
-            
+
             // 邮箱同步逻辑
             if (currentEmail) {
                 elements.regEmail.value = currentEmail;
@@ -95,15 +95,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             switchStep('update');
             Notifications.show('验证成功，请设置新密码', 'success');
             return;
-        } 
-        
+        }
+
         // 情况 2: 捕获到 SIGNED_IN 事件 (Supabase 恢复链接本质上也是一次登录)
         if (event === 'SIGNED_IN') {
             // >>> 关键修改：检查我们在页面加载初期捕获的变量 <<<
             if (isRecoveryFlow) {
                 console.log("拦截自动跳转，进入重置密码界面");
                 switchStep('update');
-                
+
                 // 只有当 session 存在时才显示提示，避免误报
                 if (session) {
                     Notifications.show('请设置您的新密码', 'info');
@@ -134,14 +134,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. 去注册
     document.getElementById('btn-to-register').addEventListener('click', () => {
-        if(elements.inputEmail.value) currentEmail = elements.inputEmail.value;
+        if (elements.inputEmail.value) currentEmail = elements.inputEmail.value;
         switchStep('register');
     });
 
     // 3. 返回修改邮箱
     document.getElementById('btn-back-email').addEventListener('click', () => switchStep('email'));
     const userChip = document.getElementById('user-chip');
-    if(userChip) userChip.addEventListener('click', () => switchStep('email'));
+    if (userChip) userChip.addEventListener('click', () => switchStep('email'));
 
     // 4. 从注册页返回登录
     document.getElementById('btn-back-login').addEventListener('click', () => {
@@ -181,8 +181,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const token = await executeCaptcha();
             const { error } = await client.auth.signInWithOtp({
                 email: currentEmail,
-                options: { 
-                    captchaToken: token, 
+                options: {
+                    captchaToken: token,
                     emailRedirectTo: getRedirectUrl()
                 }
             });
@@ -223,7 +223,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const { error } = await client.auth.signUp({
                 email: email,
                 password: pwd,
-                options: { 
+                options: {
                     captchaToken: token,
                     emailRedirectTo: getRedirectUrl()
                 }
@@ -281,9 +281,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             Notifications.show('正在更新密码...', 'info');
             // 调用 updateUser 修改密码
             const { error } = await client.auth.updateUser({ password: newPwd });
-            
+
             if (error) throw error;
-            
+
             Notifications.show('密码修改成功！正在跳转...', 'success');
             setTimeout(() => {
                 window.location.href = getRedirectUrl();
