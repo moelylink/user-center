@@ -17,10 +17,22 @@ const rootDomainStorage = {
         return null;
     },
     setItem: (key, value) => {
+        let cleanValue = value;
+        try {
+            if (value && value.includes('provider_token')) {
+                const parsed = JSON.parse(value);
+                if (parsed.provider_token) delete parsed.provider_token;
+                if (parsed.provider_refresh_token) delete parsed.provider_refresh_token;
+                cleanValue = JSON.stringify(parsed);
+            }
+        } catch (e) {
+            console.error("Clean storage token failed:", e);
+        }
+
         const d = new Date();
         d.setTime(d.getTime() + (365 * 24 * 60 * 60 * 1000));
         const expires = "expires=" + d.toUTCString();
-        document.cookie = `${key}=${value};${expires};domain=.moely.link;path=/;SameSite=Lax;Secure`;
+        document.cookie = `${key}=${cleanValue};${expires};domain=.moely.link;path=/;SameSite=Lax;Secure`;
     },
     removeItem: (key) => {
         document.cookie = `${key}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;domain=.moely.link;path=/;`;
