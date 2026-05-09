@@ -41,10 +41,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 获取重定向 URL
     function getRedirectUrl() {
         const params = new URLSearchParams(window.location.search);
-        const redirect = params.get('redirect') || '/';
-        
-        // 始终重定向到 callback 页面处理会话建立，避免直接到主页发生会话丢失和竞态
-        return "https://user.moely.link/callback/?redirect=" + encodeURIComponent(redirect);
+        const redirect = params.get('redirect');
+        if (redirect) {
+            if (redirect.includes('moely.link')) return redirect;
+            if (redirect.startsWith('/')) return "https://user.moely.link" + redirect;
+        }
+        return 'https://user.moely.link/';
     }
 
     // 切换步骤 UI
