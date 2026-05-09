@@ -201,7 +201,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const token = await executeCaptcha();
                 await client.auth.signInWithOAuth({
                     provider: provider,
-                    options: { captchaToken: token, redirectTo: getRedirectUrl() }
+                    options: { 
+                        captchaToken: token, 
+                        redirectTo: getRedirectUrl(),
+                        scopes: provider === 'azure' ? 'openid profile email' : undefined
+                    }
                 });
             } catch (err) { if (err !== 'Captcha closed') Notifications.show(err.message, 'error'); }
         });
