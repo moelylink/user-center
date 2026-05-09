@@ -48,11 +48,11 @@
                 // 如果 URL 中既没有 code 也没有 token，说明不是在做登录回调，直接跳转
                 doRedirect();
             } else {
-                // 有登录回调，安全起见设置一个较长的兜底超时时间（例如 10 秒），防止网络极度缓慢时卡死，但不应该像 2 秒那么短
+                // 兜底超时时间
                 setTimeout(() => {
                     console.warn("Callback timeout fallback triggered.");
                     doRedirect();
-                }, 10000);
+                }, 3000);
             }
         } else {
             doRedirect();
