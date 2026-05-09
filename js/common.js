@@ -19,10 +19,17 @@ const rootDomainStorage = {
     setItem: (key, value) => {
         let cleanValue = value;
         try {
-            if (value && value.includes('provider_token')) {
+            if (value && (value.includes('provider_token') || value.includes('user_metadata'))) {
                 const parsed = JSON.parse(value);
+                // 1. 彻底剔除大体积的第三方 token
                 if (parsed.provider_token) delete parsed.provider_token;
                 if (parsed.provider_refresh_token) delete parsed.provider_refresh_token;
+                
+                // 2. 彻底剔除 user 对象里的 user_metadata 和 identities (这些是冗余缓存，Supabase 恢复会话时会自动从 access_token 的 JWT 中解码重新生成它们)
+                if (parsed.user) {
+                    if (parsed.user.user_metadata) delete parsed.user.user_metadata;
+                    if (parsed.user.identities) delete parsed.user.identities;
+                }
                 cleanValue = JSON.stringify(parsed);
             }
         } catch (e) {
