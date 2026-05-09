@@ -24,11 +24,11 @@ const rootDomainStorage = {
                 // 1. 彻底剔除大体积的第三方 token
                 if (parsed.provider_token) delete parsed.provider_token;
                 if (parsed.provider_refresh_token) delete parsed.provider_refresh_token;
-                
+
                 // 2. 彻底瘦身 user 对象里的 user_metadata 和 identities (这些是主要大体积块)
                 if (parsed.user) {
                     if (parsed.user.user_metadata) delete parsed.user.user_metadata;
-                    
+
                     // 仅保留 identities 中的 provider 字段以供设置页面高亮绑定状态，剔除超大体积的 identity_data
                     if (parsed.user.identities) {
                         parsed.user.identities = parsed.user.identities.map(id => ({
@@ -283,32 +283,95 @@ document.addEventListener('DOMContentLoaded', () => {
 window.UnreadBadge = UnreadBadge;
 
 // ----------------------------------------------------------------
-// 人机验证 (hCaptcha) - 全局共用
+// 人机验证 (Cloudflare Turnstile) - 全局共用
 // ----------------------------------------------------------------
-window.SITE_KEY = '8f124646-ac04-496c-85b6-6396e8b8da3c';
+// 请在此处替换为您的 Cloudflare Turnstile Site Key
+window.SITE_KEY = '0x4AAAAAADMDPBploX286xsn';
 
 window.executeCaptcha = function () {
     return new Promise((resolve, reject) => {
+        // 动态注入加载器样式
+        if (!document.getElementById('captcha-loader-style')) {
+            const style = document.createElement('style');
+            style.id = 'captcha-loader-style';
+            style.innerHTML = `
+                .captcha-box-loading {
+                    position: relative;
+                    min-width: 320px;
+                    min-height: 90px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .captcha-loader {
+                    position: absolute;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 10px;
+                    color: var(--text-secondary);
+                    font-size: 13px;
+                    pointer-events: none;
+                }
+                .captcha-loader .spinner {
+                    width: 24px;
+                    height: 24px;
+                    border: 3px solid var(--border-color);
+                    border-top-color: var(--primary-color);
+                    border-radius: 50%;
+                    animation: captcha-spin 0.8s linear infinite;
+                }
+                @keyframes captcha-spin {
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         const overlay = document.createElement('div');
         overlay.className = 'captcha-overlay';
         const box = document.createElement('div');
-        box.className = 'captcha-box';
+        box.className = 'captcha-box captcha-box-loading';
+
+        const loader = document.createElement('div');
+        loader.className = 'captcha-loader';
+        loader.innerHTML = `
+            <div class="spinner"></div>
+            <span>正在加载验证组件...</span>
+        `;
+        box.appendChild(loader);
+
         const captchaDiv = document.createElement('div');
-        const uniqueId = 'h-captcha-' + Date.now();
+        const uniqueId = 'turnstile-' + Date.now();
         captchaDiv.id = uniqueId;
+        captchaDiv.style.position = 'relative';
+        captchaDiv.style.zIndex = '2';
         box.appendChild(captchaDiv);
+
         overlay.appendChild(box);
         document.body.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('active'));
 
-        if (!window.hcaptcha) {
+        // 点击遮罩层可以关闭验证
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('active');
+                setTimeout(() => overlay.remove(), 300);
+                reject('Captcha closed');
+            }
+        });
+
+        if (!window.turnstile) {
             Notifications.show('验证组件加载失败', 'error');
             overlay.remove(); reject('Captcha fail'); return;
         }
 
         try {
-            window.hcaptcha.render(uniqueId, {
+            window.turnstile.render(captchaDiv, {
                 sitekey: window.SITE_KEY,
+                'before-interactive-callback': () => {
+                    loader.style.display = 'none';
+                },
                 callback: (token) => {
                     overlay.classList.remove('active');
                     setTimeout(() => overlay.remove(), 300);
@@ -316,10 +379,15 @@ window.executeCaptcha = function () {
                 },
                 'error-callback': () => {
                     Notifications.show('验证失败', 'error');
-                    overlay.remove(); reject('Captcha error');
+                    overlay.classList.remove('active');
+                    setTimeout(() => overlay.remove(), 300);
+                    reject('Captcha error');
                 },
-                'close-callback': () => {
-                    overlay.remove(); reject('Captcha closed');
+                'expired-callback': () => {
+                    Notifications.show('验证已过期，请重试', 'warning');
+                    overlay.classList.remove('active');
+                    setTimeout(() => overlay.remove(), 300);
+                    reject('Captcha expired');
                 }
             });
         } catch (e) {
