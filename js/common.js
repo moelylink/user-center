@@ -350,8 +350,9 @@ window.executeCaptcha = function () {
 
         overlay.appendChild(box);
         document.body.appendChild(overlay);
+        requestAnimationFrame(() => overlay.classList.add('active'));
 
-        // 点击遮罩层可以关闭验证（只有前台显示时有用）
+        // 点击遮罩层可以关闭验证
         overlay.addEventListener('click', (e) => {
             if (e.target === overlay) {
                 overlay.classList.remove('active');
@@ -369,9 +370,7 @@ window.executeCaptcha = function () {
             window.turnstile.render(captchaDiv, {
                 sitekey: window.SITE_KEY,
                 'before-interactive-callback': () => {
-                    // 当需要额外质询（展示验证码）时，才将验证层切换至前台展示
                     loader.style.display = 'none';
-                    requestAnimationFrame(() => overlay.classList.add('active'));
                 },
                 callback: (token) => {
                     overlay.classList.remove('active');
@@ -379,17 +378,13 @@ window.executeCaptcha = function () {
                     resolve(token);
                 },
                 'error-callback': () => {
-                    if (overlay.classList.contains('active')) {
-                        Notifications.show('验证失败', 'error');
-                    }
+                    Notifications.show('验证失败', 'error');
                     overlay.classList.remove('active');
                     setTimeout(() => overlay.remove(), 300);
                     reject('Captcha error');
                 },
                 'expired-callback': () => {
-                    if (overlay.classList.contains('active')) {
-                        Notifications.show('验证已过期，请重试', 'warning');
-                    }
+                    Notifications.show('验证已过期，请重试', 'warning');
                     overlay.classList.remove('active');
                     setTimeout(() => overlay.remove(), 300);
                     reject('Captcha expired');
