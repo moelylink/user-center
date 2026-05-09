@@ -25,12 +25,6 @@
         };
 
         if (typeof client !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            const hasCode = params.has('code');
-            const hasToken = hashParams.has('access_token') || hashParams.has('id_token');
-            const hasError = params.has('error') || hashParams.has('error') || params.has('error_description') || hashParams.has('error_description');
-
             client.auth.onAuthStateChange((event, session) => {
                 console.log("Callback Auth Event:", event);
                 if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
@@ -39,21 +33,7 @@
                     }
                 }
             });
-
-            if (hasError) {
-                const errorMsg = params.get('error_description') || hashParams.get('error_description') || '登录失败，请稍后重试';
-                alert(decodeURIComponent(errorMsg));
-                window.location.href = "/login/";
-            } else if (!hasCode && !hasToken) {
-                // 如果 URL 中既没有 code 也没有 token，说明不是在做登录回调，直接跳转
-                doRedirect();
-            } else {
-                // 有登录回调，安全起见设置一个较长的兜底超时时间（例如 10 秒），防止网络极度缓慢时卡死，但不应该像 2 秒那么短
-                setTimeout(() => {
-                    console.warn("Callback timeout fallback triggered.");
-                    doRedirect();
-                }, 10000);
-            }
+            setTimeout(doRedirect, 3000);
         } else {
             doRedirect();
         }
