@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 获取重定向 URL
     function getRedirectUrl() {
+        const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
         if (redirect) {
             if (redirect.includes('moely.link')) return "https://user.moely.link/callback/?redirect=" + redirect;
