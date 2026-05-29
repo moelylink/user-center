@@ -10,7 +10,8 @@
 
     <script src="{{ absURL "js/common.js" }}"></script>
     <script type="text/javascript">
-        document.addEventListener('DOMContentLoaded', () => {
+        let retries = 0;
+        function initTurnstile() {
             const container = document.getElementById('captcha-widget-container');
             if (window.turnstile) {
                 window.turnstile.render(container, {
@@ -37,9 +38,15 @@
                     }
                 });
             } else {
-                container.innerHTML = '<div style="color: var(--text-error); padding: 12px;">验证加载失败，请刷新重试</div>';
+                retries++;
+                if (retries > 80) { // 8 seconds timeout
+                    container.innerHTML = '<div style="color: var(--text-error); padding: 12px; font-size: 13px;">验证加载超时，请检查网络并刷新重试</div>';
+                } else {
+                    setTimeout(initTurnstile, 100);
+                }
             }
-        });
+        }
+        document.addEventListener('DOMContentLoaded', initTurnstile);
     </script>
 </body>
 </html>
