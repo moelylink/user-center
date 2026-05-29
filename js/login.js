@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const params = new URLSearchParams(window.location.search);
         const redirect = params.get('redirect');
         if (redirect) {
+            if (redirect.startsWith('moely://')) return redirect;
             if (redirect.includes('moely.link')) return "https://user.moely.link/callback/?redirect=" + redirect;
             if (redirect.startsWith('/')) return "https://user.moely.link" + redirect;
         }
@@ -113,7 +114,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 setTimeout(() => {
                     // 双重保险：再次检查 URL (虽然 hash 可能已经被清除了)
                     // 但主要依赖上面的 isRecoveryFlow 变量
-                    window.location.href = getRedirectUrl();
+                    let targetUrl = getRedirectUrl();
+                    if (targetUrl.startsWith('moely://') && session) {
+                        targetUrl = targetUrl + `#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+                    }
+                    window.location.href = targetUrl;
                 }, 500);
             }
         }
