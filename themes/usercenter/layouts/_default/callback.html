@@ -17,9 +17,15 @@
             redirected = true;
             const params = new URLSearchParams(window.location.search);
             const redirect = params.get('redirect');
-            if (redirect.includes('moely.link') || redirect.startsWith('/') || redirect.includes('localhost') || redirect.includes('127.0.0.1')) {
-                window.location.href = redirect;
-                return;
+            if (redirect) {
+                if (redirect.startsWith('moely://')) {
+                    window.location.href = redirect + window.location.hash;
+                    return;
+                }
+                if (redirect.includes('moely.link') || redirect.startsWith('/') || redirect.includes('localhost') || redirect.includes('127.0.0.1')) {
+                    window.location.href = redirect;
+                    return;
+                }
             }
             window.location.href = "/";
         };

@@ -1,0 +1,45 @@
+{{ partial "header.html" . }}
+
+<body style="margin: 0; padding: 0; background: var(--bg-primary); display: flex; align-items: center; justify-content: center; height: 100vh; font-family: 'Inter', sans-serif;">
+    <div style="text-align: center; padding: 24px; max-width: 90%; background: var(--bg-card); border-radius: 24px; box-shadow: 0 8px 32px var(--shadow-color); border: 1px solid var(--border-color);">
+        <h3 style="margin: 0 0 8px 0; color: var(--text-primary); font-size: 18px; font-weight: 600;">安全校验</h3>
+        <p style="margin: 0 0 24px 0; color: var(--text-secondary); font-size: 13px;">请完成人机验证以继续操作</p>
+        
+        <div id="captcha-widget-container" style="display: inline-block; min-height: 80px;"></div>
+    </div>
+
+    <script src="{{ absURL "js/common.js" }}"></script>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('captcha-widget-container');
+            if (window.turnstile) {
+                window.turnstile.render(container, {
+                    sitekey: window.SITE_KEY || '0x4AAAAAADMDPBploX286xsn',
+                    callback: (token) => {
+                        console.log("Turnstile solved! Token:", token);
+                        // 优先通过 Flutter JS Channel 传递给 APP 原生客户端
+                        if (window.TurnstileChannel && typeof window.TurnstileChannel.postMessage === 'function') {
+                            window.TurnstileChannel.postMessage(token);
+                        } else {
+                            // 备用：在外部普通浏览器中显示成功
+                            container.innerHTML = '<div style="color: var(--primary-color); font-weight: 600; padding: 12px;">验证成功！</div>';
+                        }
+                    },
+                    'error-callback': () => {
+                        if (window.TurnstileChannel && typeof window.TurnstileChannel.postMessage === 'function') {
+                            window.TurnstileChannel.postMessage('error');
+                        }
+                    },
+                    'expired-callback': () => {
+                        if (window.TurnstileChannel && typeof window.TurnstileChannel.postMessage === 'function') {
+                            window.TurnstileChannel.postMessage('expired');
+                        }
+                    }
+                });
+            } else {
+                container.innerHTML = '<div style="color: var(--text-error); padding: 12px;">验证加载失败，请刷新重试</div>';
+            }
+        });
+    </script>
+</body>
+</html>
