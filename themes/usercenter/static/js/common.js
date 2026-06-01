@@ -553,13 +553,20 @@ window.redirectToApp = function(deepLinkUrl) {
         }
     });
 
-    // 4. 执行仅限本地的退出登录以销毁浏览器本地 Session (防止多端 RTR 刷新令牌旋转冲突)
-    // 注意：使用 scope: 'local' 只会清除浏览器端 Cookie 缓存，绝对不会去 Supabase 服务端撤销会话。
-    // 这意味着 App 导入的 Session 依然 100% 存活，且由于浏览器 Cookie 已被清空，再也不会产生刷新冲突！
-    client.auth.signOut({ scope: 'local' }).then(() => {
-        window.location.href = deepLinkUrl;
-    }).catch(e => {
-        console.error("Local sign out failed, redirecting anyway:", e);
-        window.location.href = deepLinkUrl;
-    });
+    // 4. 仅在浏览器本地物理擦除 Cookie 与 LocalStorage 会话缓存 (绝对不请求服务器，以保持服务端 Session 依然有效！)
+    // 这样既能实现网页端彻底登出，避免多端 RTR 刷新冲突，又完美保留了服务端的 Session，确保 App 能 100% 成功导入！
+    try {
+        const cookieKey = 'sb-fefckqwvcvuadiixvhns-auth-token';
+        document.cookie = `${cookieKey}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;domain=.moely.link;path=/;SameSite=Lax;Secure`;
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                localStorage.removeItem(key);
+            }
+        });
+    } catch (e) {
+        console.error("Local session cache clear failed:", e);
+    }
+
+    // 5. 执行自动重定向唤起 App
+    window.location.href = deepLinkUrl;
 };
