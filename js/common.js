@@ -285,6 +285,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (redirect && redirect.startsWith('moely://')) {
             const { data: { session } } = await client.auth.getSession();
             if (session) {
+                // 关键安全校验：向 Supabase 校验当前会话是否在服务端真实存在
+                // 解决客户端手动登出（已通知 Supabase 销毁 session_id）但浏览器端 Cookie 残留导致“无限死循环重定向”的严重 Bug
+                const { data: { user }, error: userError } = await client.auth.getUser();
+
+                if (userError || !user) {
+                    console.warn("Detected stale browser session, clearing cookies and local storage:", userError);
+                    // 清理失效的本地登录态与 Cookie
+                    await client.auth.signOut({ scope: 'local' });
+                    // 如果当前在登录页面，刷新以重置界面并允许用户进行全新的登录
+                    if (window.location.pathname.includes('/login/')) {
+                        window.location.reload();
+                    }
+                    return;
+                }
+
                 let targetUrl = redirect;
                 // 如果 hash 里没有 token，则手动拼接当前 session 中的 token
                 if (!window.location.hash.includes('access_token') && !targetUrl.includes('access_token')) {
