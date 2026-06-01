@@ -115,12 +115,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } else {
                 // 只有在【非】重置模式下，才执行自动跳转
-                setTimeout(() => {
-                    // 双重保险：再次检查 URL (虽然 hash 可能已经被清除了)
-                    // 但主要依赖上面的 isRecoveryFlow 变量
+                setTimeout(async () => {
+                    // 双重保险：重新获取最新 session，防止在 setTimeout 延迟期间被 common.js 的有效性校验清除
+                    const { data: { session: currentSession } } = await client.auth.getSession();
+                    if (!currentSession) {
+                        console.log("跳转前检测到本地会话已被清除，取消自动跳转");
+                        return;
+                    }
+
                     let targetUrl = getRedirectUrl();
-                    if (targetUrl.startsWith('moely://') && session) {
-                        targetUrl = targetUrl + `#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+                    if (targetUrl.startsWith('moely://')) {
+                        targetUrl = targetUrl + `#access_token=${currentSession.access_token}&refresh_token=${currentSession.refresh_token}`;
                     }
                     if (typeof window.redirectToApp === 'function' && targetUrl.startsWith('moely://')) {
                         window.redirectToApp(targetUrl);
