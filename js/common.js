@@ -467,7 +467,7 @@ window.redirectToApp = function(deepLinkUrl) {
             }
             .redirect-card {
                 background: var(--card-bg, #ffffff);
-                color: var(--text-primary, #1e293b);
+                color: var(--text-color, #1e293b);
                 padding: 32px 28px;
                 border-radius: 24px;
                 box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
