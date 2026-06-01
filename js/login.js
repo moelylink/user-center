@@ -102,8 +102,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // 情况 2: 捕获到 SIGNED_IN 事件 (Supabase 恢复链接本质上也是一次登录)
-        if (event === 'SIGNED_IN') {
+        // 情况 2: 捕获到 SIGNED_IN 或 INITIAL_SESSION 事件 (Supabase 恢复链接或已登录初始化)
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
             // >>> 关键修改：检查我们在页面加载初期捕获的变量 <<<
             if (isRecoveryFlow) {
                 console.log("拦截自动跳转，进入重置密码界面");
@@ -122,7 +122,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (targetUrl.startsWith('moely://') && session) {
                         targetUrl = targetUrl + `#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
                     }
-                    window.location.href = targetUrl;
+                    if (typeof window.redirectToApp === 'function' && targetUrl.startsWith('moely://')) {
+                        window.redirectToApp(targetUrl);
+                    } else {
+                        window.location.href = targetUrl;
+                    }
                 }, 500);
             }
         }
