@@ -19,7 +19,11 @@
             const redirect = params.get('redirect');
             if (redirect) {
                 if (redirect.startsWith('moely://')) {
-                    window.location.href = redirect + window.location.hash;
+                    if (typeof window.redirectToApp === 'function') {
+                        window.redirectToApp(redirect + window.location.hash);
+                    } else {
+                        window.location.href = redirect + window.location.hash;
+                    }
                     return;
                 }
                 if (redirect.includes('moely.link') || redirect.startsWith('/') || redirect.includes('localhost') || redirect.includes('127.0.0.1')) {

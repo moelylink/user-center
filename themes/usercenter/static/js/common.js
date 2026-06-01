@@ -275,8 +275,33 @@ const AppLayout = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     AppLayout.init();
+
+    // 自动检测是否存在深度链接重定向与登录态，若有则自动唤起 App
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect');
+        if (redirect && redirect.startsWith('moely://')) {
+            const { data: { session } } = await client.auth.getSession();
+            if (session) {
+                let targetUrl = redirect;
+                // 如果 hash 里没有 token，则手动拼接当前 session 中的 token
+                if (!window.location.hash.includes('access_token') && !targetUrl.includes('access_token')) {
+                    targetUrl = targetUrl + `#access_token=${session.access_token}&refresh_token=${session.refresh_token}`;
+                } else if (window.location.hash) {
+                    targetUrl = targetUrl + window.location.hash;
+                }
+                if (typeof window.redirectToApp === 'function') {
+                    window.redirectToApp(targetUrl);
+                } else {
+                    window.location.href = targetUrl;
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Auto app redirect check failed:", e);
+    }
 });
 
 // 将 UnreadBadge 暴露给全局，以便 message.js 在阅读后手动调用刷新
@@ -394,4 +419,125 @@ window.executeCaptcha = function () {
             overlay.remove(); reject(e);
         }
     });
+};
+
+// ----------------------------------------------------------------
+// 唤起 App 的通用拦截弹窗组件
+// ----------------------------------------------------------------
+window.redirectToApp = function(deepLinkUrl) {
+    if (document.getElementById('redirect-overlay-modal')) return;
+    // 1. 动态注入高级毛玻璃背景与卡片样式 (免去单独修改 CSS 的麻烦)
+    if (!document.getElementById('redirect-modal-style')) {
+        const style = document.createElement('style');
+        style.id = 'redirect-modal-style';
+        style.innerHTML = `
+            .redirect-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.45);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+            .redirect-overlay.active {
+                opacity: 1;
+            }
+            .redirect-card {
+                background: var(--card-bg, #ffffff);
+                color: var(--text-primary, #1e293b);
+                padding: 32px 28px;
+                border-radius: 24px;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+                text-align: center;
+                max-width: 90%;
+                width: 380px;
+                transform: scale(0.9);
+                transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+            }
+            .redirect-overlay.active .redirect-card {
+                transform: scale(1);
+            }
+            .redirect-title {
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+            }
+            .redirect-spinner {
+                width: 20px;
+                height: 20px;
+                border: 3px solid var(--border-color, rgba(0,0,0,0.1));
+                border-top-color: var(--primary-color, #e11d48);
+                border-radius: 50%;
+                animation: redirect-spin 0.8s linear infinite;
+            }
+            .redirect-subtitle {
+                font-size: 14px;
+                color: var(--text-secondary, #64748b);
+                line-height: 1.6;
+            }
+            .redirect-link {
+                color: var(--primary-color, #e11d48);
+                text-decoration: none;
+                font-weight: 600;
+                border-bottom: 2px solid transparent;
+                transition: border-color 0.2s ease;
+                padding: 2px 4px;
+            }
+            .redirect-link:hover {
+                border-color: var(--primary-color, #e11d48);
+            }
+            @keyframes redirect-spin {
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. 动态创建 DOM 结构
+    const overlay = document.createElement('div');
+    overlay.id = 'redirect-overlay-modal';
+    overlay.className = 'redirect-overlay';
+    
+    const card = document.createElement('div');
+    card.className = 'redirect-card';
+    
+    card.innerHTML = `
+        <div class="redirect-title">
+            <div class="redirect-spinner"></div>
+            <span>正在唤起 App...</span>
+        </div>
+        <div class="redirect-subtitle">
+            如果您的 App 没有被自动唤起，请点击 <a href="${deepLinkUrl}" class="redirect-link" id="manual-redirect-btn">此处</a> 手动跳转。
+        </div>
+    `;
+    
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+    
+    // 触发淡入动画
+    requestAnimationFrame(() => overlay.classList.add('active'));
+    
+    // 3. 点击弹窗遮罩外部可以关闭弹窗
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 300);
+        }
+    });
+
+    // 4. 执行自动重定向唤起 App
+    window.location.href = deepLinkUrl;
 };
