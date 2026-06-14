@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const [dataRes, countRes] = await Promise.all([
                 client
                     .from('anime_favorites')
-                    .select('id, title, url, created_at')
+                    .select('id, title, url, image, created_at')
                     .eq('user_id', userId)
                     .order('created_at', { ascending: currentSort === 'asc' })
                     .range(from, to),
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             animes.forEach(item => {
                 const date = new Date(item.created_at).toLocaleDateString();
                 const div = document.createElement('div');
-                div.className = 'article-item';
+                div.className = 'anime-card';
                 div.setAttribute('data-id', item.id);
                 
                 // 处理链接：自动添加前缀（如果只是相对路径）
@@ -103,19 +103,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 如果已经是 http 开头则不加前缀
                 const targetUrl = item.url.startsWith('http') ? item.url : `https://anime.moely.link/${cleanPath}`;
                 
+                // 处理封面图
+                const coverImg = item.image ? item.image : '/favicon.png';
+                
                 div.innerHTML = `
-                    <a href="${targetUrl}" target="_blank" class="article-link" title="${item.title}">
-                        <span class="material-icons-round article-icon">play_circle_outline</span>
-                        ${escapeHtml(item.title)}
-                    </a>
-                    <div class="article-meta">
-                        <span class="article-date">
-                            <span class="material-icons-round" style="font-size:16px">event</span>
-                            ${date}
-                        </span>
-                        <button class="btn-icon-danger" onclick="window.openDeleteModal('${item.id}')" title="删除">
+                    <div class="anime-cover-wrapper">
+                        <img src="${coverImg}" alt="${escapeHtml(item.title)}" class="anime-cover" loading="lazy" onerror="this.src='/favicon.png'">
+                        <button class="delete-btn" onclick="window.openDeleteModal('${item.id}')" title="删除">
                             <span class="material-icons-round">delete_outline</span>
                         </button>
+                    </div>
+                    <div class="anime-info">
+                        <a href="${targetUrl}" target="_blank" class="anime-title" title="${item.title}">
+                            ${escapeHtml(item.title)}
+                        </a>
+                        <div class="anime-meta">
+                            <span class="anime-date">
+                                <span class="material-icons-round" style="font-size:14px">event</span>
+                                ${date}
+                            </span>
+                        </div>
                     </div>
                 `;
                 fragment.appendChild(div);
@@ -193,7 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (error) throw error;
 
                 // 移除 DOM
-                const itemEl = document.querySelector(`.article-item[data-id="${itemToDelete}"]`);
+                const itemEl = document.querySelector(`.anime-card[data-id="${itemToDelete}"]`);
                 if (itemEl) itemEl.remove();
 
                 Notifications.show('已取消收藏', 'success');
