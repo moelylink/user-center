@@ -312,7 +312,6 @@ body { background: var(--bg-color); min-height: 100vh; }
     overflow: hidden;
     line-height: 1.4;
     transition: color 0.2s;
-    height: 40px; /* Force title to occupy 2 lines visually to align card heights */
 }
 
 .anime-title:hover {
@@ -349,6 +348,5 @@ body { background: var(--bg-color); min-height: 100vh; }
     
     .anime-title {
         font-size: 13px;
-        height: 36px;
     }
 }
