@@ -108,7 +108,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 div.innerHTML = `
                     <div class="anime-cover-wrapper">
-                        <img src="${coverImg}" alt="${escapeHtml(item.title)}" class="anime-cover" loading="lazy" onerror="this.src='/favicon.png'">
+                        <a href="${targetUrl}" target="_blank" class="anime-cover-link">
+                            <img src="${coverImg}" alt="${escapeHtml(item.title)}" class="anime-cover" loading="lazy" onerror="this.src='/favicon.png'">
+                        </a>
                         <button class="delete-btn" onclick="window.openDeleteModal('${item.id}')" title="删除">
                             <span class="material-icons-round">delete_outline</span>
                         </button>
