@@ -259,30 +259,37 @@ body { background: var(--bg-color); min-height: 100vh; }
 
 .anime-cover-wrapper .delete-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 30px;
-    height: 30px;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(255, 255, 255, 0.9);
     border: none;
-    color: #ffffff;
+    color: #ff4d4f;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     opacity: 0;
-    transition: all 0.2s ease;
+    transform: scale(0.8);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     backdrop-filter: blur(4px);
     z-index: 2;
 }
 
+[data-theme="dark"] .anime-cover-wrapper .delete-btn {
+    background: rgba(44, 44, 44, 0.9);
+}
+
 .anime-card:hover .delete-btn {
     opacity: 1;
+    transform: scale(1);
 }
 
 .anime-cover-wrapper .delete-btn:hover {
-    background: #ef4444;
+    background: #ff4d4f;
+    color: #ffffff;
     transform: scale(1.1);
 }
 
@@ -335,8 +342,9 @@ body { background: var(--bg-color); min-height: 100vh; }
     
     .anime-cover-wrapper .delete-btn {
         opacity: 1; /* Always visible on touch screens */
-        width: 28px;
-        height: 28px;
+        transform: scale(1);
+        width: 30px;
+        height: 30px;
     }
     
     .anime-title {

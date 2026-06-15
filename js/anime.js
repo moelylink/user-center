@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             <img src="${coverImg}" alt="${escapeHtml(item.title)}" class="anime-cover" loading="lazy" onerror="this.src='/favicon.png'">
                         </a>
                         <button class="delete-btn" onclick="window.openDeleteModal('${item.id}')" title="删除">
-                            <span class="material-icons-round">delete_outline</span>
+                            <span class="material-icons-round">delete</span>
                         </button>
                     </div>
                     <div class="anime-info">
