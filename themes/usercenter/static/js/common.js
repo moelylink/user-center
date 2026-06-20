@@ -166,6 +166,11 @@ const Notifications = {
     list: new Set(),
 
     show(message, type = 'info') {
+        if (message && typeof message === 'string') {
+            if (message.includes("Password should contain at least one character of each:")) {
+                message = "密码需包含大小写字母、数字和特殊字符";
+            }
+        }
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
 
@@ -199,10 +204,11 @@ const Notifications = {
 
     updatePosition() {
         const arr = Array.from(this.list);
+        let offset = 16;
         for (let i = arr.length - 1; i >= 0; i--) {
             const item = arr[i];
-            const offset = 16 + (arr.length - 1 - i) * 70;
             item.style.bottom = `${offset}px`;
+            offset += item.offsetHeight + 12;
         }
     }
 };
@@ -335,6 +341,18 @@ window.executeCaptcha = function () {
             const style = document.createElement('style');
             style.id = 'captcha-loader-style';
             style.innerHTML = `
+                .captcha-overlay {
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0, 0, 0, 0.6); z-index: 3000;
+                    display: flex; justify-content: center; align-items: center;
+                    opacity: 0; visibility: hidden; transition: opacity 0.3s;
+                }
+                .captcha-overlay.active { opacity: 1; visibility: visible; }
+                .captcha-box {
+                    position: relative;
+                    background: var(--bg-color); padding: 20px; border-radius: 12px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+                }
                 .captcha-box-loading {
                     position: relative;
                     min-width: 320px;
@@ -361,6 +379,33 @@ window.executeCaptcha = function () {
                     border-radius: 50%;
                     animation: captcha-spin 0.8s linear infinite;
                 }
+                .captcha-close-btn {
+                    position: absolute;
+                    top: 8px;
+                    right: 8px;
+                    background: transparent;
+                    border: none;
+                    cursor: pointer;
+                    color: var(--text-secondary);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: 50%;
+                    z-index: 10;
+                    transition: background-color 0.2s, color 0.2s;
+                }
+                .captcha-close-btn:hover {
+                    background: rgba(0, 0, 0, 0.05);
+                    color: var(--text-color);
+                }
+                [data-theme="dark"] .captcha-close-btn:hover {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+                .captcha-close-btn .material-icons-round {
+                    font-size: 18px;
+                }
                 @keyframes captcha-spin {
                     to { transform: rotate(360deg); }
                 }
@@ -372,6 +417,18 @@ window.executeCaptcha = function () {
         overlay.className = 'captcha-overlay';
         const box = document.createElement('div');
         box.className = 'captcha-box captcha-box-loading';
+
+        // 创建右上角的关闭按钮 (x)
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'captcha-close-btn';
+        closeBtn.innerHTML = '<span class="material-icons-round">close</span>';
+        closeBtn.setAttribute('aria-label', '关闭验证');
+        closeBtn.addEventListener('click', () => {
+            overlay.classList.remove('active');
+            setTimeout(() => overlay.remove(), 300);
+            reject('Captcha closed');
+        });
+        box.appendChild(closeBtn);
 
         const loader = document.createElement('div');
         loader.className = 'captcha-loader';
@@ -391,15 +448,6 @@ window.executeCaptcha = function () {
         overlay.appendChild(box);
         document.body.appendChild(overlay);
         requestAnimationFrame(() => overlay.classList.add('active'));
-
-        // 点击遮罩层可以关闭验证
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                overlay.classList.remove('active');
-                setTimeout(() => overlay.remove(), 300);
-                reject('Captcha closed');
-            }
-        });
 
         if (!window.turnstile) {
             Notifications.show('验证组件加载失败', 'error');
