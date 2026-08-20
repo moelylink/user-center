@@ -143,6 +143,51 @@ document.addEventListener('DOMContentLoaded', async () => {
         switchStep('password');
     });
 
+
+    function isPasskeySupported() {
+        return window.isSecureContext &&
+            typeof window.PublicKeyCredential !== 'undefined' &&
+            navigator.credentials &&
+            typeof navigator.credentials.get === 'function' &&
+            typeof client.auth.signInWithPasskey === 'function';
+    }
+
+    function isPasskeyCancellation(error) {
+        return error && (error.name === 'NotAllowedError' || error.code === 'webauthn_operation_cancelled');
+    }
+
+    const passkeyLoginButton = document.getElementById('btn-passkey-login');
+    if (passkeyLoginButton) {
+        if (!isPasskeySupported()) {
+            passkeyLoginButton.disabled = true;
+            passkeyLoginButton.title = '当前浏览器不支持通行密钥登录';
+        }
+
+        passkeyLoginButton.addEventListener('click', async () => {
+            if (!isPasskeySupported()) {
+                Notifications.show('当前浏览器不支持通行密钥，请使用密码、验证码或第三方登录。', 'warning');
+                return;
+            }
+
+            passkeyLoginButton.disabled = true;
+            try {
+                const token = await executeCaptcha();
+                const { error } = await client.auth.signInWithPasskey({
+                    options: { captchaToken: token }
+                });
+                if (error) throw error;
+                Notifications.show('登录成功', 'success');
+            } catch (err) {
+                if (err !== 'Captcha closed' && !isPasskeyCancellation(err)) {
+                    console.error('Passkey sign-in failed:', err);
+                    Notifications.show('通行密钥登录未完成，请使用密码、验证码或第三方登录重试。', 'error');
+                }
+            } finally {
+                passkeyLoginButton.disabled = false;
+            }
+        });
+    }
+
     // 2. 去注册
     document.getElementById('btn-to-register').addEventListener('click', () => {
         if (elements.inputEmail.value) currentEmail = elements.inputEmail.value;

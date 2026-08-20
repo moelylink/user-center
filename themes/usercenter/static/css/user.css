@@ -44,10 +44,34 @@ body { background: var(--bg-color); min-height: 100vh; }
 .btn-primary { background: var(--primary-color); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; }
 .btn-primary:hover { background: var(--primary-hover); }
 .divider { height: 1px; background: var(--border-color); margin: 24px 0; }
-.passkey-section { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
-.passkey-info h4 { margin-bottom: 4px; font-size: 16px; }
-.passkey-info p { margin: 0; }
-#btn-create-passkey { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 8px; }
+
+.passkey-card .card-header h3 { justify-content: flex-start; }
+.experimental-badge { padding: 3px 7px; border-radius: 10px; background: rgba(255, 152, 0, 0.14); color: #b26a00; font-size: 11px; font-weight: 400; white-space: nowrap; }
+[data-theme="dark"] .experimental-badge { color: #ffc46b; }
+.passkey-state { min-height: 20px; margin-bottom: 12px; color: var(--text-secondary); font-size: 13px; }
+.passkey-state.error { color: #ff4d4f; }
+.passkey-list { margin-bottom: 18px; }
+.passkey-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border-color); }
+.passkey-item:last-child { border-bottom: none; }
+.passkey-icon { color: var(--primary-color); }
+.passkey-details { flex: 1; min-width: 0; }
+.passkey-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.passkey-meta { margin-top: 4px; color: var(--text-secondary); font-size: 12px; }
+.passkey-actions { display: flex; gap: 6px; }
+.passkey-actions button { width: 32px; height: 32px; padding: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; }
+.passkey-actions .btn-danger { background: transparent; border: 1px solid #ff4d4f; color: #ff4d4f; }
+.passkey-actions .btn-danger:hover { background: #ff4d4f; color: #fff; }
+#btn-create-passkey { display: inline-flex; align-items: center; gap: 8px; }
+#btn-create-passkey:disabled, .passkey-actions button:disabled { opacity: 0.55; cursor: not-allowed; }
+.modal-card h3 { margin: 0 0 10px; }
+.modal-card p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.modal-card .input-group { margin-top: 20px; text-align: left; }
+.modal-card .btn-outline { padding: 8px 24px; border-radius: 8px; cursor: pointer; }
+@media (max-width: 480px) {
+    .passkey-item { align-items: flex-start; }
+    .passkey-actions { flex-direction: column; }
+}
+
 
 /* 美图收藏 (Masonry) */
 .container-fluid { max-width: 1400px; margin: 0 auto; }
