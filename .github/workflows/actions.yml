@@ -1,4 +1,4 @@
-name: Actions # 名字自取
+name: GitHub Actions # 名字自取
 
 on:
   push:
