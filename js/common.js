@@ -57,7 +57,10 @@ const client = supabase.createClient(supabaseUrl, supabaseKey, {
         storage: rootDomainStorage,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true
+        detectSessionInUrl: true,
+        experimental: {
+            passkey: true
+        }
     }
 });
 
