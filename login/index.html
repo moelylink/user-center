@@ -6,11 +6,7 @@
 <span class=material-icons-round>close</span></button></div><div class=sidebar-menu><a href=https://www.moely.link/ class=sidebar-item>萌哩主站</a>
 <a href=https://anime.moely.link/ class=sidebar-item>萌哩番剧</a></div></aside><div class=auth-container><div class=auth-card><div class=auth-header><h2 id=auth-title>登录</h2><p id=auth-subtitle>使用您的 萌哩 账号</p></div><div id=step-email class="auth-step active"><div class=input-group><input type=email id=input-email required placeholder=" ">
 <label for=input-email>电子邮箱</label></div><div class=actions-right><button class=btn-text id=btn-to-register>创建账号</button>
-<button class=btn-primary id=btn-next>下一步</button></div><div class=passkey-login><button class="btn-outlined passkey-login-btn" id=btn-passkey-login type=button>
-<span class=material-icons-round>passkey</span>
-使用通行密钥登录
-</button>
-<span class=experimental-badge>实验性功能</span></div><p class=passkey-login-hint>可使用此设备或已同步的通行密钥，无需输入邮箱。</p><div class=divider><span>或通过第三方登录</span></div><div class=social-login><button class=social-btn data-provider=google title="Google 登录">
+<button class=btn-primary id=btn-next>下一步</button></div><div class=passkey-login><button class="btn-outlined passkey-login-btn" id=btn-passkey-login type=button>使用通行密钥登录<span class=experimental-badge>Beta</span></button></div><div class=divider><span>或通过第三方登录</span></div><div class=social-login><button class=social-btn data-provider=google title="Google 登录">
 <i class="fa-brands fa-google"></i>
 </button>
 <button class=social-btn data-provider=github title="GitHub 登录">
@@ -25,7 +21,8 @@
 <label for=reg-email>电子邮箱</label></div><div class=input-group><input type=password id=reg-password required placeholder=" ">
 <label for=reg-password>设置密码</label></div><div class=input-group><input type=password id=reg-password-repeat required placeholder=" ">
 <label for=reg-password-repeat>确认密码</label></div><div style=margin-top:0;margin-bottom:20px;font-size:12px>*密码需不少于8位，且包含大小写字母、数字和特殊字符</div><div class="actions-right mt-4"><button class=btn-text id=btn-back-login>已有账号？登录</button>
-<button class=btn-primary id=btn-register>注册</button></div></div><div id=step-register-success class=auth-step><div class=success-message style=line-height:1.6;margin-bottom:24px;font-size:14px;color:var(--text-color)>我们向您的邮箱 <span id=register-success-email style=font-weight:600;color:var(--primary-color)>mail@example.com</span> 发送了一封邮件，请点击邮件中的确认链接激活您的账号。<div style=margin-top:12px;font-size:12px;color:var(--text-secondary);opacity:.8>*注意：请记得检查垃圾收件箱。</div></div><div class="actions-right mt-4"><button class=btn-primary id=btn-success-login style=width:100%;text-align:center;border-radius:20px>已激活，去登录</button></div></div><div id=step-forgot class=auth-step><div class=input-group><input type=email id=forgot-email required placeholder=" ">
+<button class=btn-primary id=btn-register>注册</button></div></div><div id=step-register-success class=auth-step><div class=success-message style=line-height:1.6;margin-bottom:24px;font-size:14px;color:var(--text-color)>我们向您的邮箱 <span id=register-success-email style=font-weight:600;color:var(--primary-color)>mail@example.com</span>
+发送了一封邮件，请点击邮件中的确认链接激活您的账号。<div style=margin-top:12px;font-size:12px;color:var(--text-secondary);opacity:.8>*注意：请记得检查垃圾收件箱。</div></div><div class="actions-right mt-4"><button class=btn-primary id=btn-success-login style=width:100%;text-align:center;border-radius:20px>已激活，去登录</button></div></div><div id=step-forgot class=auth-step><div class=input-group><input type=email id=forgot-email required placeholder=" ">
 <label for=forgot-email>电子邮箱</label></div><div class="actions-right mt-4"><button class=btn-text id=btn-cancel-forgot>返回登录</button>
 <button class=btn-primary id=btn-send-reset-link>发送重置链接</button></div></div><div id=step-update-password class=auth-step><div class=input-group><input type=password id=new-password required placeholder=" ">
 <label for=new-password>新密码</label></div><div class=input-group><input type=password id=new-password-confirm required placeholder=" ">

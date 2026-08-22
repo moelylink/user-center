@@ -81,8 +81,8 @@
 }
 
 /* 按钮组 */
-.actions-right { display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap;}
-.actions-left-right { display: flex; justify-content: space-between; align-items: center; }
+.actions-right { display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap; }
+.actions-left-right { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
 .mt-4 { margin-top: 16px; }
 
 .btn-primary {
@@ -105,11 +105,10 @@
 }
 
 
-.passkey-login { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 22px; }
-.passkey-login-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.passkey-login { display: flex; justify-content: flex-end; align-items: center; margin-top: 22px; }
+.passkey-login-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; white-space: nowrap; width: auto; }
 .passkey-login-btn .material-icons-round { font-size: 18px; }
 .passkey-login-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-.passkey-login-hint { margin: 10px 0 0; text-align: center; font-size: 12px; color: var(--text-secondary); }
 .experimental-badge { padding: 3px 7px; border-radius: 10px; background: rgba(255, 152, 0, 0.14); color: #b26a00; font-size: 11px; white-space: nowrap; }
 [data-theme="dark"] .experimental-badge { color: #ffc46b; }
 
@@ -142,3 +141,11 @@
 .user-chip .material-icons-round { font-size: 20px; margin-right: 8px; color: var(--text-secondary); }
 .user-chip span { font-size: 14px; color: var(--text-color); font-weight: 500; }
 .user-chip:hover { background-color: rgba(0,0,0,0.05); }
+
+/* 移动端自适应：防止按钮错位和溢出 */
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 30px 20px 24px;
+        border-radius: 20px;
+    }
+}
