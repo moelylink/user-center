@@ -333,9 +333,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     passkeyId: data.id,
                                     friendlyName
                                 });
-                                if (renameError) throw renameError;
+                                if (renameError) {
+                                    // passkey 已注册成功，命名失败不应阻断整体流程
+                                    console.warn('Passkey rename failed:', renameError);
+                                    Notifications.show('通行密钥已添加，但命名失败，可稍后重命名。', 'warning');
+                                } else {
+                                    Notifications.show('通行密钥已添加', 'success');
+                                }
+                            } else {
+                                Notifications.show('通行密钥已添加', 'success');
                             }
-                            Notifications.show('通行密钥已添加', 'success');
                             await loadPasskeys();
                         } catch (err) {
                             if (!isPasskeyCancellation(err)) {

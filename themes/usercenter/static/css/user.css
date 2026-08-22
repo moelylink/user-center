@@ -46,6 +46,17 @@ body { background: var(--bg-color); min-height: 100vh; }
 .divider { height: 1px; background: var(--border-color); margin: 24px 0; }
 
 .passkey-card .card-header h3 { justify-content: flex-start; }
+.passkey-section { margin-top: 4px; }
+.passkey-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--text-color);
+}
+.passkey-section-title .material-icons-round { font-size: 20px; color: var(--primary-color); }
 .experimental-badge { padding: 3px 7px; border-radius: 10px; background: rgba(255, 152, 0, 0.14); color: #b26a00; font-size: 11px; font-weight: 400; white-space: nowrap; }
 [data-theme="dark"] .experimental-badge { color: #ffc46b; }
 .passkey-state { min-height: 20px; margin-bottom: 12px; color: var(--text-secondary); font-size: 13px; }
@@ -371,6 +382,33 @@ body { background: var(--bg-color); min-height: 100vh; }
     }
     
     .anime-title {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-actions {
+        text-align: center;
+        width: 100%;
+    }
+    .form-actions button, .form-actions .btn-primary {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .modal-actions {
+        flex-direction: column-reverse;
+        gap: 8px;
+    }
+    .modal-actions button {
+        width: 100%;
+    }
+    /* 番剧收藏分页按钮在超窄屏幕下调整 */
+    .pagination-container .btn-outline {
+        padding: 6px 12px;
         font-size: 13px;
     }
 }
