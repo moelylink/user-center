@@ -149,3 +149,53 @@
         border-radius: 20px;
     }
 }
+
+/* OTP 验证码输入框样式 */
+.otp-inputs-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 24px 0;
+}
+
+.otp-input {
+    width: 48px;
+    height: 56px;
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-color);
+    background: transparent;
+    border: 1px solid #80868b;
+    border-radius: 8px;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .otp-input {
+    border-color: #858585;
+}
+
+.otp-input:focus {
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.15);
+}
+
+.otp-actions-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+#step-otp .user-chip {
+    display: flex;
+    width: fit-content;
+}
+
+@media (max-width: 480px) {
+    .otp-input {
+        width: 38px;
+        height: 48px;
+        font-size: 20px;
+    }
+}
