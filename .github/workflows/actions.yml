@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - source  # 触发分支
+  workflow_dispatch:
 
 jobs:
   deploy: 
