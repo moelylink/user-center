@@ -1,9 +1,9 @@
-name: GitHub Actions # 名字自取
+name: Actions
 
 on:
   push:
     branches:
-      - source  # 触发分支
+      - source
   workflow_dispatch:
 
 jobs:
