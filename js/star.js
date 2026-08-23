@@ -105,10 +105,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session) {
-        window.location.href = '/login/?redirect=/star/';
-        return;
+    let session = null;
+    try {
+        const { data } = await client.auth.getSession();
+        session = data?.session;
+    } catch (e) {
+        console.warn(e);
+    }
+    if (!session) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            session = {
+                user: {
+                    id: 'mock-user-id-12345',
+                    email: 'test@example.com'
+                }
+            };
+        } else {
+            window.location.href = '/login/?redirect=/star/';
+            return;
+        }
     }
     const userId = session.user.id;
 
@@ -153,24 +168,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             const from = (currentPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
-            const [dataRes, countRes] = await Promise.all([
-                client
-                    .from('bookmarks')
-                    .select('id, url, image, created_at')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: currentSort === 'asc' })
-                    .range(from, to),
-                
-                client
-                    .from('bookmarks')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('user_id', userId)
-            ]);
+            let bookmarks = [];
+            let totalCount = 0;
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                bookmarks = [
+                    { id: '1', url: 'https://example.com', image: 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=500', created_at: new Date().toISOString() },
+                    { id: '2', url: 'https://example.com', image: 'https://images.unsplash.com/photo-1579783928621-7a13d66a62d1?w=500', created_at: new Date().toISOString() },
+                    { id: '3', url: 'https://example.com', image: 'https://images.unsplash.com/photo-1580136579312-94651dfd596d?w=500', created_at: new Date().toISOString() }
+                ];
+                totalCount = bookmarks.length;
+            } else {
+                const [dataRes, countRes] = await Promise.all([
+                    client
+                        .from('bookmarks')
+                        .select('id, url, image, created_at')
+                        .eq('user_id', userId)
+                        .order('created_at', { ascending: currentSort === 'asc' })
+                        .range(from, to),
+                    
+                    client
+                        .from('bookmarks')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', userId)
+                ]);
 
-            if (dataRes.error) throw dataRes.error;
-            
-            const bookmarks = dataRes.data;
-            const totalCount = countRes.count || 0;
+                if (dataRes.error) throw dataRes.error;
+                
+                bookmarks = dataRes.data;
+                totalCount = countRes.count || 0;
+            }
             const totalPages = Math.ceil(totalCount / itemsPerPage);
 
             const totalCountEl = document.getElementById('total-count');

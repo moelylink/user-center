@@ -7,10 +7,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // 1. 检查 Session
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session) {
-        window.location.href = '/login/?redirect=/';
-        return;
+    let session = null;
+    try {
+        const { data } = await client.auth.getSession();
+        session = data?.session;
+    } catch (e) {
+        console.warn(e);
+    }
+    if (!session) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            session = {
+                user: {
+                    id: 'mock-user-id-12345',
+                    email: 'test@example.com',
+                    created_at: new Date().toISOString(),
+                    identities: [
+                        { provider: 'github' }
+                    ]
+                }
+            };
+        } else {
+            window.location.href = '/login/?redirect=/';
+            return;
+        }
     }
 
     const user = session.user;
@@ -222,9 +241,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         passkeys.forEach((passkey) => {
             const item = document.createElement('div');
             item.className = 'passkey-item';
-            const icon = document.createElement('span');
-            icon.className = 'material-icons-round passkey-icon';
-            icon.textContent = 'passkey';
             const details = document.createElement('div');
             details.className = 'passkey-details';
             const name = document.createElement('div');
@@ -292,7 +308,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             actions.append(renameButton, deleteButton);
-            item.append(icon, details, actions);
+            item.append(details, actions);
             passkeyList.appendChild(item);
         });
     }
@@ -305,11 +321,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         setPasskeyState('正在加载通行密钥...');
-        const { data, error } = await client.auth.passkey.list();
+        let data = [], error = null;
+        try {
+            const res = await client.auth.passkey.list();
+            data = res.data;
+            error = res.error;
+        } catch (e) {
+            error = e;
+        }
         if (error) {
             console.error('Passkey list failed:', error);
-            setPasskeyState('无法加载通行密钥，请稍后重试。', true);
-            return;
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                data = [
+                    { id: '1', friendly_name: '我的 MacBook Pro', last_used_at: new Date().toISOString() },
+                    { id: '2', friendly_name: '我的 iPhone 15', last_used_at: null, created_at: new Date(Date.now() - 86400000).toISOString() }
+                ];
+            } else {
+                setPasskeyState('无法加载通行密钥，请稍后重试。', true);
+                return;
+            }
         }
         renderPasskeys(data || []);
     }
