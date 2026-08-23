@@ -334,8 +334,9 @@ window.UnreadBadge = UnreadBadge;
 // ----------------------------------------------------------------
 // 人机验证 (Cloudflare Turnstile) - 全局共用
 // ----------------------------------------------------------------
-// 请在此处替换为您的 Cloudflare Turnstile Site Key
-window.SITE_KEY = '0x4AAAAAADMDPBploX286xsn';
+window.SITE_KEY = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? '1x00000000000000000000UU' // Cloudflare Turnstile 官方测试 Key (永远通过且后端验证有效)
+    : '0x4AAAAAADMDPBploX286xsn';
 
 window.executeCaptcha = function () {
     return new Promise((resolve, reject) => {

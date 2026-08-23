@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const steps = {
         email: document.getElementById('step-email'),
         password: document.getElementById('step-password'),
+        otp: document.getElementById('step-otp'),
         register: document.getElementById('step-register'),
         forgot: document.getElementById('step-forgot'), // 请求邮件页
         update: document.getElementById('step-update-password'), // 设置新密码页
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         regEmail: document.getElementById('reg-email'),
         forgotEmail: document.getElementById('forgot-email'),
         displayEmail: document.getElementById('display-email'),
+        displayOtpEmail: document.getElementById('display-otp-email'),
         title: document.getElementById('auth-title'),
         subtitle: document.getElementById('auth-subtitle'),
         // 新密码输入框
@@ -64,6 +66,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             elements.title.textContent = '欢迎回来';
             elements.subtitle.textContent = '请输入密码以继续';
             if (elements.displayEmail) elements.displayEmail.textContent = currentEmail;
+        } else if (stepName === 'otp') {
+            elements.title.textContent = '输入验证码';
+            elements.subtitle.textContent = '验证码已发送，请输入以继续';
+            if (elements.displayOtpEmail) elements.displayOtpEmail.textContent = currentEmail;
+            // 自动聚焦第一个 OTP 输入框
+            setTimeout(() => {
+                const firstInput = document.querySelector('.otp-input[data-index="0"]');
+                if (firstInput) firstInput.focus();
+            }, 100);
         } else if (stepName === 'register') {
             elements.title.textContent = '创建账号';
             elements.subtitle.textContent = '注册一个新的 萌哩 账号';
@@ -232,21 +243,198 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 6. OTP 登录
-    document.getElementById('btn-otp-login').addEventListener('click', async () => {
+    let resendTimer = null;
+    function startResendCountdown() {
+        const btnResend = document.getElementById('btn-otp-resend');
+        if (!btnResend) return;
+        
+        let seconds = 60;
+        btnResend.disabled = true;
+        btnResend.textContent = `重新发送 (${seconds}s)`;
+        
+        if (resendTimer) clearInterval(resendTimer);
+        resendTimer = setInterval(() => {
+            seconds--;
+            if (seconds <= 0) {
+                clearInterval(resendTimer);
+                btnResend.disabled = false;
+                btnResend.textContent = '重新发送';
+            } else {
+                btnResend.textContent = `重新发送 (${seconds}s)`;
+            }
+        }, 1000);
+    }
+
+    async function sendOtpCode() {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            console.log("Localhost mock mode: Skipping backend OTP send, showing OTP UI.");
+            Notifications.show('[本地模拟] 验证码已发送至您的邮箱 (已自动模拟为 123456)', 'info');
+            switchStep('otp');
+            startResendCountdown();
+            return;
+        }
+
         try {
             const token = await executeCaptcha();
             const { error } = await client.auth.signInWithOtp({
                 email: currentEmail,
                 options: {
-                    captchaToken: token,
-                    emailRedirectTo: getRedirectUrl()
+                    captchaToken: token
                 }
             });
             if (error) throw error;
-            Notifications.show('登录链接已发送至您的邮箱', 'success');
+            Notifications.show('验证码已发送至您的邮箱', 'success');
+            switchStep('otp');
+            startResendCountdown();
         } catch (err) {
-            if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
+            if (err !== 'Captcha closed') Notifications.show(err.message || '发送验证码失败', 'error');
         }
+    }
+
+    document.getElementById('btn-otp-login').addEventListener('click', sendOtpCode);
+
+    const btnOtpResend = document.getElementById('btn-otp-resend');
+    if (btnOtpResend) {
+        btnOtpResend.addEventListener('click', sendOtpCode);
+    }
+
+    // OTP 输入框联动逻辑
+    const otpInputs = document.querySelectorAll('.otp-input');
+    otpInputs.forEach((input, index) => {
+        // 限制只能输入数字
+        input.addEventListener('input', (e) => {
+            const val = e.target.value;
+            // 如果不是数字，清空
+            if (!/^[0-9]$/.test(val)) {
+                e.target.value = '';
+                return;
+            }
+            // 聚焦到下一个框
+            if (index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            } else {
+                // 最后一个输入框，且全部已填满，自动校验
+                checkAndSubmitOtp();
+            }
+        });
+
+        // 监听退格键 (Backspace)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace') {
+                if (input.value === '') {
+                    // 如果当前框为空，聚焦到上一个框并清除内容
+                    if (index > 0) {
+                        otpInputs[index - 1].focus();
+                        otpInputs[index - 1].value = '';
+                    }
+                } else {
+                    // 当前框有值，直接清空（原生行为）
+                    input.value = '';
+                }
+                e.preventDefault();
+            }
+        });
+
+        // 监听粘贴事件
+        input.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const pastedText = clipboardData.getData('Text').trim();
+            
+            // 提取前6位数字
+            const digits = pastedText.replace(/\D/g, '').slice(0, 6);
+            
+            // 依次填入框中
+            for (let i = 0; i < digits.length && i < otpInputs.length; i++) {
+                otpInputs[i].value = digits[i];
+            }
+            
+            // 聚焦到填写的最后一个框或保持聚焦
+            const focusIndex = Math.min(digits.length, otpInputs.length - 1);
+            if (focusIndex >= 0) {
+                otpInputs[focusIndex].focus();
+            }
+            
+            if (digits.length === 6) {
+                checkAndSubmitOtp();
+            }
+        });
+    });
+
+    // 检查并自动提交 OTP
+    function getOtpCode() {
+        let code = '';
+        otpInputs.forEach(input => code += input.value);
+        return code;
+    }
+
+    function checkAndSubmitOtp() {
+        const code = getOtpCode();
+        if (code.length === 6) {
+            submitOtpVerification(code);
+        }
+    }
+
+    // 校验 OTP 并登录
+    async function submitOtpVerification(code) {
+        if (!code || code.length !== 6) {
+            return Notifications.show('请输入6位验证码', 'warning');
+        }
+        
+        const btnVerify = document.getElementById('btn-verify-otp');
+        const originalText = btnVerify.textContent;
+        btnVerify.disabled = true;
+        btnVerify.textContent = '验证中...';
+        
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            setTimeout(() => {
+                btnVerify.disabled = false;
+                btnVerify.textContent = originalText;
+                if (code === '123456') {
+                    Notifications.show('[本地模拟] 登录成功！正在跳转...', 'success');
+                    setTimeout(() => {
+                        window.location.href = getRedirectUrl();
+                    }, 1000);
+                } else {
+                    Notifications.show('[本地模拟] 验证码错误，请输入 123456', 'error');
+                    otpInputs.forEach(input => input.value = '');
+                    if (otpInputs[0]) otpInputs[0].focus();
+                }
+            }, 800);
+            return;
+        }
+
+        try {
+            const { error } = await client.auth.verifyOtp({
+                email: currentEmail,
+                token: code,
+                type: 'email'
+            });
+            if (error) throw error;
+            Notifications.show('登录成功', 'success');
+        } catch (err) {
+            Notifications.show(err.message || '验证码错误或已失效', 'error');
+            // 清空输入框并重新聚焦第一格
+            otpInputs.forEach(input => input.value = '');
+            if (otpInputs[0]) otpInputs[0].focus();
+        } finally {
+            btnVerify.disabled = false;
+            btnVerify.textContent = originalText;
+        }
+    }
+
+    // 手动点击验证按钮
+    document.getElementById('btn-verify-otp').addEventListener('click', () => {
+        submitOtpVerification(getOtpCode());
+    });
+
+    // 从 OTP 页面返回
+    document.getElementById('btn-back-otp').addEventListener('click', () => {
+        if (resendTimer) {
+            clearInterval(resendTimer);
+            resendTimer = null;
+        }
+        switchStep('password');
     });
 
     // 7. 第三方登录

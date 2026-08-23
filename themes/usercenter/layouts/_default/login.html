@@ -92,6 +92,31 @@
                 </div>
             </div>
 
+            <div id="step-otp" class="auth-step">
+                <div class="user-chip" id="otp-user-chip">
+                    <span class="material-icons-round">account_circle</span>
+                    <span id="display-otp-email"></span>
+                </div>
+                <div class="otp-message" style="margin-bottom: 24px; font-size: 14px; color: var(--text-color); text-align: center;">
+                    我们已向您的邮箱发送了 6 位验证码，请在下方输入：
+                </div>
+                <div class="otp-inputs-container">
+                    <input type="text" maxlength="1" class="otp-input" data-index="0" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code">
+                    <input type="text" maxlength="1" class="otp-input" data-index="1" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input" data-index="2" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input" data-index="3" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input" data-index="4" inputmode="numeric" pattern="[0-9]*">
+                    <input type="text" maxlength="1" class="otp-input" data-index="5" inputmode="numeric" pattern="[0-9]*">
+                </div>
+                <div class="otp-actions-row">
+                    <button class="btn-text" id="btn-otp-resend" disabled>重新发送 (60s)</button>
+                </div>
+                <div class="actions-right mt-4">
+                    <button class="btn-text" id="btn-back-otp">返回</button>
+                    <button class="btn-primary" id="btn-verify-otp">验证并登录</button>
+                </div>
+            </div>
+
             <div id="step-register" class="auth-step">
                 <div class="input-group">
                     <input type="email" id="reg-email" required placeholder=" ">
