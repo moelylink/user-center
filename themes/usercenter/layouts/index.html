@@ -83,22 +83,21 @@
                             </div>
                         </form>
 
-                        <div class="divider"></div>
+                    </div>
+                </div>
 
-                        <div class="passkey-section">
-                            <h4 class="passkey-section-title">
-                                <span class="material-icons-round">passkey</span>
-                                通行密钥
-                                <span class="experimental-badge">Beta</span>
-                            </h4>
-                            <p class="text-secondary">通行密钥可使用此设备或已同步设备的生物识别、PIN 登录。请保留密码、验证码或第三方登录方式以便恢复账号。</p>
-                            <div id="passkey-state" class="passkey-state" role="status">正在加载通行密钥...</div>
-                            <div id="passkey-list" class="passkey-list" aria-live="polite"></div>
-                            <div class="form-actions">
-                                <button type="button" class="btn-primary" id="btn-create-passkey">
-                                    <span class="material-icons-round">add</span> 添加通行密钥
-                                </button>
-                            </div>
+                <div class="card passkey-card">
+                    <div class="card-header">
+                        <h3><span class="material-icons-round">vpn_key</span> 通行密钥 <span class="experimental-badge">Beta</span></h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary">通行密钥可使用此设备或已同步设备的生物识别、PIN 登录。请保留密码、验证码或第三方登录方式以便恢复账号。</p>
+                        <div id="passkey-state" class="passkey-state" role="status">正在加载通行密钥...</div>
+                        <div id="passkey-list" class="passkey-list" aria-live="polite"></div>
+                        <div class="form-actions">
+                            <button type="button" class="btn-primary" id="btn-create-passkey">
+                                <span class="material-icons-round">add</span> 添加通行密钥
+                            </button>
                         </div>
                     </div>
                 </div>

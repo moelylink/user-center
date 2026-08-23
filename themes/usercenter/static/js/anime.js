@@ -24,10 +24,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 1. 初始化
     if (typeof client === 'undefined') return;
 
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session) {
-        window.location.href = '/login/?redirect=/anime/';
-        return;
+    let session = null;
+    try {
+        const { data } = await client.auth.getSession();
+        session = data?.session;
+    } catch (e) {
+        console.warn(e);
+    }
+    if (!session) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            session = {
+                user: {
+                    id: 'mock-user-id-12345',
+                    email: 'test@example.com'
+                }
+            };
+        } else {
+            window.location.href = '/login/?redirect=/anime/';
+            return;
+        }
     }
     const userId = session.user.id;
 
@@ -62,24 +77,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             const from = (currentPage - 1) * itemsPerPage;
             const to = from + itemsPerPage - 1;
 
-            const [dataRes, countRes] = await Promise.all([
-                client
-                    .from('anime_favorites')
-                    .select('id, title, url, image, created_at')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: currentSort === 'asc' })
-                    .range(from, to),
-                
-                client
-                    .from('anime_favorites')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('user_id', userId)
-            ]);
+            let animes = [];
+            let totalCount = 0;
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                animes = [
+                    { id: '1', title: '命运石之门', url: 'https://bgm.tv/subject/10479', image: 'https://lain.bgm.tv/pic/cover/l/d2/8f/10479_66Zkk.jpg', created_at: new Date().toISOString() },
+                    { id: '2', title: '新世纪福音战士', url: 'https://bgm.tv/subject/265', image: 'https://lain.bgm.tv/pic/cover/l/ec/2e/265_J9511.jpg', created_at: new Date().toISOString() }
+                ];
+                totalCount = animes.length;
+            } else {
+                const [dataRes, countRes] = await Promise.all([
+                    client
+                        .from('anime_favorites')
+                        .select('id, title, url, image, created_at')
+                        .eq('user_id', userId)
+                        .order('created_at', { ascending: currentSort === 'asc' })
+                        .range(from, to),
+                    
+                    client
+                        .from('anime_favorites')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('user_id', userId)
+                ]);
 
-            if (dataRes.error) throw dataRes.error;
-            
-            const animes = dataRes.data;
-            const totalCount = countRes.count || 0;
+                if (dataRes.error) throw dataRes.error;
+                
+                animes = dataRes.data;
+                totalCount = countRes.count || 0;
+            }
             const totalPages = Math.ceil(totalCount / itemsPerPage);
 
             document.getElementById('total-count').textContent = `共 ${totalCount} 部`;

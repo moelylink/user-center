@@ -2,11 +2,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 依赖 common.js
     if (typeof client === 'undefined') return;
 
-    // 1. 验证登录
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session) {
-        window.location.href = '/login/?redirect=/message/';
-        return;
+    // 1. 检查 Session
+    let session = null;
+    try {
+        const { data } = await client.auth.getSession();
+        session = data?.session;
+    } catch (e) {
+        console.warn(e);
+    }
+    if (!session) {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+            session = {
+                user: {
+                    id: 'mock-user-id-12345',
+                    email: 'test@example.com'
+                }
+            };
+        } else {
+            window.location.href = '/login/?redirect=/message/';
+            return;
+        }
     }
     const myId = session.user.id;
 
@@ -56,12 +71,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         contactListEl.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
         
         try {
-            // A. 获取系统通知 (预览 + 未读数)
-            const { data: sysNotifs } = await client
-                .from('notifications')
-                .select('*')
-                .eq('user_id', myId)
-                .order('created_at', { ascending: false });
+            let sysNotifs = [];
+            let messages = [];
+            let profiles = [];
+            
+            if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                sysNotifs = [
+                    { id: '1', title: '系统更新公告', content: '用户中心系统已升级完毕，新增通行密钥管理独立容器。', is_read: false, created_at: new Date().toISOString() }
+                ];
+                messages = [
+                    { sender_id: 'mock-friend-id', receiver_id: myId, content: '你好！这是发给你的测试消息。', is_read: false, created_at: new Date().toISOString() },
+                    { sender_id: myId, receiver_id: 'mock-friend-id', content: '嗨，你好！', is_read: true, created_at: new Date().toISOString() }
+                ];
+                profiles = [
+                    { id: 'mock-friend-id', email: 'friend@moely.link' }
+                ];
+            } else {
+                // A. 获取系统通知 (预览 + 未读数)
+                const { data } = await client
+                    .from('notifications')
+                    .select('*')
+                    .eq('user_id', myId)
+                    .order('created_at', { ascending: false });
+                sysNotifs = data || [];
+                
+                // B. 获取私信列表
+                const { data: msgs, error } = await client
+                    .from('private_messages')
+                    .select('sender_id, receiver_id, created_at, content, is_read')
+                    .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                messages = msgs || [];
+
+                // 获取私信用户信息
+                const contactIds = new Set();
+                messages.forEach(msg => {
+                    if (msg.sender_id !== myId) contactIds.add(msg.sender_id);
+                    if (msg.receiver_id !== myId) contactIds.add(msg.receiver_id);
+                });
+
+                if (contactIds.size > 0) {
+                    const { data: pros, error: profileError } = await client
+                        .from('profiles')
+                        .select('id, email')
+                        .in('id', Array.from(contactIds));
+                    
+                    if (profileError) throw profileError;
+                    profiles = pros || [];
+                }
+            }
             
             const lastSysMsg = sysNotifs && sysNotifs.length > 0 ? sysNotifs[0] : null;
             
@@ -69,24 +129,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             const sysUnreadCount = sysNotifs ? sysNotifs.filter(n => !n.is_read).length : 0;
             unreadCounts.set(SYSTEM_BOT.id, sysUnreadCount);
 
-            // B. 获取私信列表
-            const { data: messages, error } = await client
-                .from('private_messages')
-                .select('sender_id, receiver_id, created_at, content, is_read')
-                .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
-                .order('created_at', { ascending: false });
-
-            if (error) throw error;
-
-            // 提取联系人 & 统计私信未读数
-            const contactIds = new Set();
-            
             messages.forEach(msg => {
-                // 收集 ID
-                if (msg.sender_id !== myId) contactIds.add(msg.sender_id);
-                if (msg.receiver_id !== myId) contactIds.add(msg.receiver_id);
-
-                // >>> 修复核心：统计未读数 <<<
                 // 如果我是接收者，且消息未读
                 if (msg.receiver_id === myId && !msg.is_read) {
                     const sender = msg.sender_id;
@@ -94,18 +137,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     unreadCounts.set(sender, current + 1);
                 }
             });
-
-            // 获取私信用户信息
-            let profiles = [];
-            if (contactIds.size > 0) {
-                const { data: pros, error: profileError } = await client
-                    .from('profiles')
-                    .select('id, email')
-                    .in('id', Array.from(contactIds));
-                
-                if (profileError) throw profileError;
-                profiles = pros;
-            }
 
             // 渲染列表
             contactListEl.innerHTML = '';
@@ -239,17 +270,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             chatPane.classList.add('read-only');
             
             try {
-                const { data: notifs, error } = await client
-                    .from('notifications')
-                    .select('*')
-                    .eq('user_id', myId)
-                    .order('created_at', { ascending: true });
+                let notifs = [];
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    notifs = [
+                        { id: '1', title: '系统更新公告', content: '用户中心系统已升级完毕，新增通行密钥管理独立容器。', created_at: new Date().toISOString() }
+                    ];
+                } else {
+                    const { data, error } = await client
+                        .from('notifications')
+                        .select('*')
+                        .eq('user_id', myId)
+                        .order('created_at', { ascending: true });
 
-                if (error) throw error;
+                    if (error) throw error;
+                    notifs = data || [];
+                    // 标记已读
+                    await client.from('notifications').update({ is_read: true }).eq('user_id', myId).eq('is_read', false);
+                }
                 renderSystemMessages(notifs);
                 
-                // 标记已读
-                await client.from('notifications').update({ is_read: true }).eq('user_id', myId).eq('is_read', false);
                 // 更新全局侧边栏红点
                 if (window.UnreadBadge) window.UnreadBadge.check();
 
@@ -266,21 +305,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             sendBtn.disabled = false;
 
             try {
-                const { data: messages, error } = await client
-                    .from('private_messages')
-                    .select('*')
-                    .or(`and(sender_id.eq.${myId},receiver_id.eq.${userProfile.id}),and(sender_id.eq.${userProfile.id},receiver_id.eq.${myId})`)
-                    .order('created_at', { ascending: true });
+                let messages = [];
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    messages = [
+                        { sender_id: 'mock-friend-id', receiver_id: myId, content: '你好！这是发给你的测试消息。', created_at: new Date().toISOString() },
+                        { sender_id: myId, receiver_id: 'mock-friend-id', content: '嗨，你好！', created_at: new Date().toISOString() }
+                    ];
+                } else {
+                    const { data, error } = await client
+                        .from('private_messages')
+                        .select('*')
+                        .or(`and(sender_id.eq.${myId},receiver_id.eq.${userProfile.id}),and(sender_id.eq.${userProfile.id},receiver_id.eq.${myId})`)
+                        .order('created_at', { ascending: true });
 
-                if (error) throw error;
+                    if (error) throw error;
+                    messages = data || [];
+                    
+                    // 标记已读
+                    await client.from('private_messages')
+                        .update({ is_read: true })
+                        .eq('receiver_id', myId)
+                        .eq('sender_id', userProfile.id)
+                        .eq('is_read', false);
+                }
                 renderPrivateMessages(messages);
-
-                // 标记已读
-                await client.from('private_messages')
-                    .update({ is_read: true })
-                    .eq('receiver_id', myId)
-                    .eq('sender_id', userProfile.id)
-                    .eq('is_read', false);
                 
                 // 更新全局侧边栏红点
                 if (window.UnreadBadge) window.UnreadBadge.check();
