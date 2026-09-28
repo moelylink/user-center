@@ -178,7 +178,8 @@ const Notifications = {
         notification.className = `notification ${type}`;
 
         const icon = type === 'success' ? 'check_circle' :
-            type === 'error' ? 'error' : 'warning';
+            type === 'error' ? 'error' :
+            type === 'info' ? 'info' : 'warning';
 
         notification.innerHTML = `
             <div class="notification-wrapper">
@@ -336,87 +337,10 @@ window.UnreadBadge = UnreadBadge;
 // ----------------------------------------------------------------
 window.SITE_KEY = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? '1x00000000000000000000UU' // Cloudflare Turnstile 官方测试 Key (永远通过且后端验证有效)
-    : '0x4AAAAAADMDPBploX286xsn';
+    : '0x4AAAAAAFHEnksEadC07npr';
 
 window.executeCaptcha = function () {
     return new Promise((resolve, reject) => {
-        // 动态注入加载器样式
-        if (!document.getElementById('captcha-loader-style')) {
-            const style = document.createElement('style');
-            style.id = 'captcha-loader-style';
-            style.innerHTML = `
-                .captcha-overlay {
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0, 0, 0, 0.6); z-index: 3000;
-                    display: flex; justify-content: center; align-items: center;
-                    opacity: 0; visibility: hidden; transition: opacity 0.3s;
-                }
-                .captcha-overlay.active { opacity: 1; visibility: visible; }
-                .captcha-box {
-                    position: relative;
-                    background: var(--bg-color); padding: 20px; border-radius: 12px;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-                }
-                .captcha-box-loading {
-                    position: relative;
-                    min-width: 320px;
-                    min-height: 90px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .captcha-loader {
-                    position: absolute;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 10px;
-                    color: var(--text-secondary);
-                    font-size: 13px;
-                    pointer-events: none;
-                }
-                .captcha-loader .spinner {
-                    width: 24px;
-                    height: 24px;
-                    border: 3px solid var(--border-color);
-                    border-top-color: var(--primary-color);
-                    border-radius: 50%;
-                    animation: captcha-spin 0.8s linear infinite;
-                }
-                .captcha-close-btn {
-                    position: absolute;
-                    top: 8px;
-                    right: 8px;
-                    background: transparent;
-                    border: none;
-                    cursor: pointer;
-                    color: var(--text-secondary);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 28px;
-                    height: 28px;
-                    border-radius: 50%;
-                    z-index: 10;
-                    transition: background-color 0.2s, color 0.2s;
-                }
-                .captcha-close-btn:hover {
-                    background: rgba(0, 0, 0, 0.05);
-                    color: var(--text-color);
-                }
-                [data-theme="dark"] .captcha-close-btn:hover {
-                    background: rgba(255, 255, 255, 0.1);
-                }
-                .captcha-close-btn .material-icons-round {
-                    font-size: 18px;
-                }
-                @keyframes captcha-spin {
-                    to { transform: rotate(360deg); }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-
         const overlay = document.createElement('div');
         overlay.className = 'captcha-overlay';
         const box = document.createElement('div');
@@ -493,87 +417,8 @@ window.executeCaptcha = function () {
 // ----------------------------------------------------------------
 window.redirectToApp = function(deepLinkUrl) {
     if (document.getElementById('redirect-overlay-modal')) return;
-    // 1. 动态注入高级毛玻璃背景与卡片样式 (免去单独修改 CSS 的麻烦)
-    if (!document.getElementById('redirect-modal-style')) {
-        const style = document.createElement('style');
-        style.id = 'redirect-modal-style';
-        style.innerHTML = `
-            .redirect-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.45);
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 99999;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-            }
-            .redirect-overlay.active {
-                opacity: 1;
-            }
-            .redirect-card {
-                background: var(--card-bg, #ffffff);
-                color: var(--text-color, #1e293b);
-                padding: 32px 28px;
-                border-radius: 24px;
-                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
-                text-align: center;
-                max-width: 90%;
-                width: 380px;
-                transform: scale(0.9);
-                transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-                border: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
-            }
-            .redirect-overlay.active .redirect-card {
-                transform: scale(1);
-            }
-            .redirect-title {
-                font-size: 18px;
-                font-weight: 700;
-                margin-bottom: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 12px;
-            }
-            .redirect-spinner {
-                width: 20px;
-                height: 20px;
-                border: 3px solid var(--border-color, rgba(0,0,0,0.1));
-                border-top-color: var(--primary-color, #e11d48);
-                border-radius: 50%;
-                animation: redirect-spin 0.8s linear infinite;
-            }
-            .redirect-subtitle {
-                font-size: 14px;
-                color: var(--text-secondary, #64748b);
-                line-height: 1.6;
-            }
-            .redirect-link {
-                color: var(--primary-color, #e11d48);
-                text-decoration: none;
-                font-weight: 600;
-                border-bottom: 2px solid transparent;
-                transition: border-color 0.2s ease;
-                padding: 2px 4px;
-            }
-            .redirect-link:hover {
-                border-color: var(--primary-color, #e11d48);
-            }
-            @keyframes redirect-spin {
-                to { transform: rotate(360deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
 
-    // 2. 动态创建 DOM 结构
+    // 动态创建 DOM 结构
     const overlay = document.createElement('div');
     overlay.id = 'redirect-overlay-modal';
     overlay.className = 'redirect-overlay';
