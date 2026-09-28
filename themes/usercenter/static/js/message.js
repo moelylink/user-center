@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. 加载联系人列表 (修复红点显示)
     // ============================================================
     async function loadContacts() {
-        contactListEl.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
+        contactListEl.innerHTML = '<div class="loading-spinner"></div>';
         
         try {
             let sysNotifs = [];
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         } catch (err) {
             console.error(err);
-            contactListEl.innerHTML = '<p style="color:red;text-align:center">加载失败: ' + err.message + '</p>';
+            contactListEl.innerHTML = '<p class="chat-placeholder error">加载失败: ' + escapeHtml(err.message) + '</p>';
         }
     }
 
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rawName = userProfile.email || 'Unknown';
         document.getElementById('current-chat-name').textContent = userProfile.isSystem ? rawName : rawName.split('@')[0];
         
-        messagesArea.innerHTML = '<div class="loading-spinner" style="margin:20px auto"></div>';
+        messagesArea.innerHTML = '<div class="loading-spinner"></div>';
 
         // ----------------------------------------------------
         // 分支 A: 系统通知
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             } catch (err) {
                 console.error(err);
-                messagesArea.innerHTML = '<p style="text-align:center">加载通知失败</p>';
+                messagesArea.innerHTML = '<p class="chat-placeholder error">加载通知失败</p>';
             }
         } 
         // ----------------------------------------------------
@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             } catch (err) {
                 console.error(err);
-                messagesArea.innerHTML = '<p style="text-align:center">消息加载失败</p>';
+                messagesArea.innerHTML = '<p class="chat-placeholder error">消息加载失败</p>';
             }
         }
     }
@@ -343,10 +343,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     function renderSystemMessages(notifications) {
         messagesArea.innerHTML = '';
         if (!notifications || notifications.length === 0) {
-            messagesArea.innerHTML = '<p style="text-align:center;color:#ccc;margin-top:20px">暂无系统通知</p>';
+            messagesArea.innerHTML = '<p class="chat-placeholder">暂无系统通知</p>';
             return;
         }
 
+        const fragment = document.createDocumentFragment();
         notifications.forEach(note => {
             const div = document.createElement('div');
             div.className = 'message-bubble system-msg';
@@ -359,22 +360,27 @@ document.addEventListener('DOMContentLoaded', async () => {
             html += `<div class="message-time">${new Date(note.created_at).toLocaleString()}</div>`;
 
             div.innerHTML = html;
-            messagesArea.appendChild(div);
+            fragment.appendChild(div);
         });
+        messagesArea.appendChild(fragment);
         scrollToBottom();
     }
 
     function renderPrivateMessages(messages) {
         messagesArea.innerHTML = '';
         if (!messages || messages.length === 0) {
-            messagesArea.innerHTML = '<p style="text-align:center;color:#ccc;margin-top:20px">暂无消息，打个招呼吧！</p>';
+            messagesArea.innerHTML = '<p class="chat-placeholder">暂无消息，打个招呼吧！</p>';
             return;
         }
-        messages.forEach(msg => appendMessageUI(msg));
+        const fragment = document.createDocumentFragment();
+        messages.forEach(msg => {
+            fragment.appendChild(createMessageElement(msg));
+        });
+        messagesArea.appendChild(fragment);
         scrollToBottom();
     }
 
-    function appendMessageUI(msg) {
+    function createMessageElement(msg) {
         const isMine = msg.sender_id === myId;
         const div = document.createElement('div');
         div.className = `message-bubble ${isMine ? 'sent' : 'received'}`;
@@ -382,7 +388,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             ${escapeHtml(msg.content)}
             <div class="message-time">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
         `;
-        messagesArea.appendChild(div);
+        return div;
+    }
+
+    function appendMessageUI(msg) {
+        messagesArea.appendChild(createMessageElement(msg));
         scrollToBottom();
     }
 

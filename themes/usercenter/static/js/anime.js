@@ -1,26 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    // ----------------------------------------------------------------
-    // 0. 样式注入 (确保弹窗样式存在)
-    // ----------------------------------------------------------------
-    if (!document.getElementById('injected-modal-styles')) {
-        const fixedStyles = document.createElement('style');
-        fixedStyles.id = 'injected-modal-styles';
-        fixedStyles.textContent = `
-            .modal-overlay { position: fixed !important; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 2147483647; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: 0.3s; backdrop-filter: blur(2px); }
-            .modal-overlay.active { opacity: 1; visibility: visible; }
-            .modal-card { background: #fff; width: 90%; max-width: 360px; padding: 24px; border-radius: 16px; text-align: center; transform: scale(0.9); transition: 0.3s; color: #333; }
-            [data-theme="dark"] .modal-card { background: #2c2c2c; color: #eee; }
-            .modal-overlay.active .modal-card { transform: scale(1); }
-            .modal-icon.warning { color: #ff4d4f; margin-bottom: 16px; } .modal-icon .material-icons-round { font-size: 48px; }
-            .modal-actions { display: flex; gap: 12px; margin-top: 24px; }
-            .modal-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; }
-            .btn-cancel { background: #f5f5f5; color: #666; }
-            [data-theme="dark"] .btn-cancel { background: #3a3a3a; color: #aaa; }
-            .btn-confirm { background: #ff4d4f; color: white; }
-        `;
-        document.head.appendChild(fixedStyles);
-    }
-
     // 1. 初始化
     if (typeof client === 'undefined') return;
 
