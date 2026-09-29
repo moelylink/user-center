@@ -53,10 +53,36 @@ document.addEventListener('DOMContentLoaded', async () => {
         return 'https://user.moely.link/';
     }
 
+    // 设置按钮加载中状态（转圈动画）
+    function setButtonLoading(button, isLoading) {
+        if (!button) return;
+        if (isLoading) {
+            button.classList.add('btn-loading');
+            button.disabled = true;
+        } else {
+            button.classList.remove('btn-loading');
+            button.disabled = false;
+        }
+    }
+
     // 切换步骤 UI
     function switchStep(stepName) {
         Object.values(steps).forEach(el => { if (el) el.classList.remove('active'); });
         if (steps[stepName]) steps[stepName].classList.add('active');
+
+        // 步骤切换时重置主要按钮的加载状态，避免跨步骤状态残留
+        const btnLogin = document.getElementById('btn-login');
+        const btnRegister = document.getElementById('btn-register');
+        const btnVerifyOtp = document.getElementById('btn-verify-otp');
+        const btnOtpLogin = document.getElementById('btn-otp-login');
+        const btnSendReset = document.getElementById('btn-send-reset-link');
+        const btnSaveNewPwd = document.getElementById('btn-save-new-password');
+        if (btnLogin) setButtonLoading(btnLogin, false);
+        if (btnRegister) setButtonLoading(btnRegister, false);
+        if (btnVerifyOtp) setButtonLoading(btnVerifyOtp, false);
+        if (btnOtpLogin) setButtonLoading(btnOtpLogin, false);
+        if (btnSendReset) setButtonLoading(btnSendReset, false);
+        if (btnSaveNewPwd) setButtonLoading(btnSaveNewPwd, false);
 
         // 动态更新标题
         if (stepName === 'email') {
@@ -180,7 +206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 return;
             }
 
-            passkeyLoginButton.disabled = true;
+            setButtonLoading(passkeyLoginButton, true);
             try {
                 const token = await executeCaptcha();
                 const { error } = await client.auth.signInWithPasskey({
@@ -189,12 +215,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (error) throw error;
                 Notifications.show('登录成功', 'success');
             } catch (err) {
+                setButtonLoading(passkeyLoginButton, false);
                 if (err !== 'Captcha closed' && !isPasskeyCancellation(err)) {
                     console.error('Passkey sign-in failed:', err);
                     Notifications.show('通行密钥登录未完成，请使用密码、验证码或第三方登录重试。', 'error');
                 }
-            } finally {
-                passkeyLoginButton.disabled = false;
             }
         });
     }
@@ -224,10 +249,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 5. 登录
-    document.getElementById('btn-login').addEventListener('click', async () => {
+    const btnLogin = document.getElementById('btn-login');
+    btnLogin.addEventListener('click', async () => {
         const password = document.getElementById('input-password').value;
         if (!password) return Notifications.show('请输入密码', 'warning');
 
+        setButtonLoading(btnLogin, true);
         try {
             const token = await executeCaptcha();
             const { error } = await client.auth.signInWithPassword({
@@ -238,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
             Notifications.show('登录成功', 'success');
         } catch (err) {
+            setButtonLoading(btnLogin, false);
             if (err !== 'Captcha closed') Notifications.show(err.message || '登录失败', 'error');
         }
     });
@@ -266,6 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function sendOtpCode() {
+        const btnOtpLogin = document.getElementById('btn-otp-login');
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             console.log("Localhost mock mode: Skipping backend OTP send, showing OTP UI.");
             Notifications.show('[本地模拟] 验证码已发送至您的邮箱 (已自动模拟为 123456)', 'info');
@@ -274,6 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        setButtonLoading(btnOtpLogin, true);
         try {
             const token = await executeCaptcha();
             const { error } = await client.auth.signInWithOtp({
@@ -288,6 +318,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             startResendCountdown();
         } catch (err) {
             if (err !== 'Captcha closed') Notifications.show(err.message || '发送验证码失败', 'error');
+        } finally {
+            setButtonLoading(btnOtpLogin, false);
         }
     }
 
@@ -382,20 +414,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         
         const btnVerify = document.getElementById('btn-verify-otp');
-        const originalText = btnVerify.textContent;
-        btnVerify.disabled = true;
-        btnVerify.textContent = '验证中...';
+        setButtonLoading(btnVerify, true);
         
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
             setTimeout(() => {
-                btnVerify.disabled = false;
-                btnVerify.textContent = originalText;
                 if (code === '123456') {
                     Notifications.show('[本地模拟] 登录成功！正在跳转...', 'success');
                     setTimeout(() => {
                         window.location.href = getRedirectUrl();
                     }, 1000);
                 } else {
+                    setButtonLoading(btnVerify, false);
                     Notifications.show('[本地模拟] 验证码错误，请输入 123456', 'error');
                     otpInputs.forEach(input => input.value = '');
                     if (otpInputs[0]) otpInputs[0].focus();
@@ -413,13 +442,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (error) throw error;
             Notifications.show('登录成功', 'success');
         } catch (err) {
+            setButtonLoading(btnVerify, false);
             Notifications.show(err.message || '验证码错误或已失效', 'error');
             // 清空输入框并重新聚焦第一格
             otpInputs.forEach(input => input.value = '');
             if (otpInputs[0]) otpInputs[0].focus();
-        } finally {
-            btnVerify.disabled = false;
-            btnVerify.textContent = originalText;
         }
     }
 
@@ -456,7 +483,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // 8. 注册
-    document.getElementById('btn-register').addEventListener('click', async () => {
+    const btnRegister = document.getElementById('btn-register');
+    btnRegister.addEventListener('click', async () => {
         const email = elements.regEmail.value.trim();
         const pwd = document.getElementById('reg-password').value;
         const pwdR = document.getElementById('reg-password-repeat').value;
@@ -466,6 +494,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (pwd.length < 8) return Notifications.show('密码长度需大于8位', 'warning');
         if (pwd !== pwdR) return Notifications.show('两次密码输入不一致', 'warning');
 
+        setButtonLoading(btnRegister, true);
         try {
             const token = await executeCaptcha();
             const { error } = await client.auth.signUp({
@@ -483,6 +512,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             switchStep('registerSuccess');
         } catch (err) {
             if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
+        } finally {
+            setButtonLoading(btnRegister, false);
         }
     });
 
@@ -513,10 +544,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('btn-cancel-forgot').addEventListener('click', () => switchStep('email'));
 
     // C. 发送重置邮件
-    document.getElementById('btn-send-reset-link').addEventListener('click', async () => {
+    const btnSendReset = document.getElementById('btn-send-reset-link');
+    btnSendReset.addEventListener('click', async () => {
         const email = elements.forgotEmail.value.trim();
         if (!email) return Notifications.show('请输入注册邮箱', 'warning');
 
+        setButtonLoading(btnSendReset, true);
         try {
             const token = await executeCaptcha();
             const { error } = await client.auth.resetPasswordForEmail(email, {
@@ -529,17 +562,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             setTimeout(() => switchStep('email'), 2000);
         } catch (err) {
             if (err !== 'Captcha closed') Notifications.show(err.message, 'error');
+        } finally {
+            setButtonLoading(btnSendReset, false);
         }
     });
 
     // D. 提交新密码 (用户从邮件回来后)
-    document.getElementById('btn-save-new-password').addEventListener('click', async () => {
+    const btnSaveNewPwd = document.getElementById('btn-save-new-password');
+    btnSaveNewPwd.addEventListener('click', async () => {
         const newPwd = elements.newPwd.value;
         const confirmPwd = elements.newPwdConfirm.value;
 
         if (newPwd.length < 8) return Notifications.show('新密码长度需大于8位', 'warning');
         if (newPwd !== confirmPwd) return Notifications.show('两次密码输入不一致', 'warning');
 
+        setButtonLoading(btnSaveNewPwd, true);
         try {
             Notifications.show('正在更新密码...', 'info');
             // 调用 updateUser 修改密码
@@ -553,6 +590,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 1500);
 
         } catch (err) {
+            setButtonLoading(btnSaveNewPwd, false);
             Notifications.show('修改失败: ' + err.message, 'error');
         }
     });
